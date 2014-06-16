@@ -1,14 +1,31 @@
-#include "../src/setTDRStyle.cc"
-#include "../intefrace/setTDRStyle.h"
+#include "setTDRStyle.h"
+
+#include <iostream>
+#include <vector>
+#include <string>
+#include <cmath>
+#include <cstdlib>
+
+#include "TFile.h"
+#include "TCanvas.h"
+#include "TH1F.h"
+#include "TGraphErrors.h"
+#include "TF1.h"
+#include "TPaveText.h"
+#include "TArrow.h"
+#include "TLegend.h"
 
 std::string label  = "Upgrade_NoAging_PU0-140";
 std::string label2 = "MC-NuGun-runAB-noPU";
 
 int rebin = 120;
 
+void SetHistoStyle(TH1F* h, const std::string& dataset, const std::string& region, const std::string& type, TLegend** leg, const bool& log = false);
+void SetGraphStyle(TGraphErrors* g, const std::string& dataset, const std::string& region, const std::string& type, const std::string& type2, TLegend** leg);
 
 
-void drawNoisePlots()
+
+int main()
 {
   setTDRStyle();
   gStyle->SetPadTopMargin(0.05);
@@ -20,13 +37,13 @@ void drawNoisePlots()
   gStyle->SetOptStat(0);
   gStyle->SetOptFit(0);
   
-  
-  TFile* f2 = TFile::Open(("../output/nuGunGraphs/nuGunGraphs_"+label2+".root").c_str(),"READ");
+  std::string baseDir = std::string(getenv("STUDYNOISE"));
+  TFile* f2 = TFile::Open((baseDir+"/output/nuGunGraphs/nuGunGraphs_"+label2+".root").c_str(),"READ");
   TGraph* gNuGun_recHitE_RMS_vsIRing = (TGraph*)( f2->Get("g_recHitE_RMS_vsIRing") );
   gNuGun_recHitE_RMS_vsIRing -> SetLineColor(kBlue);
   gNuGun_recHitE_RMS_vsIRing -> SetLineWidth(2);
   
-  TFile* f  = TFile::Open(("../output/studyNoise_" +label +".root").c_str(),"READ");
+  TFile* f  = TFile::Open((baseDir+"/output/studyNoise_" +label +".root").c_str(),"READ");
   f -> cd();
   
   
@@ -124,14 +141,14 @@ void drawNoisePlots()
       TCanvas* c_temp1 = new TCanvas(canvasName,canvasName);
       
       char fileName[250];
-      sprintf(fileName,"noisePlots__%s/recHitE_vsNPU_%s_%s.pdf",label.c_str(),region.c_str(),dataset.c_str());
+      sprintf(fileName,"%s/output/noisePlots__%s/recHitE_vsNPU_%s_%s.pdf",baseDir.c_str(),label.c_str(),region.c_str(),dataset.c_str());
       std::string fileNameString1(fileName);
       c_temp1 -> Print((fileNameString1+"[").c_str(),"pdf");
       
       sprintf(canvasName,"c_recHitE_vsNPU_%s_%s_log",region.c_str(),dataset.c_str());
       TCanvas* c_temp2 = new TCanvas(canvasName,canvasName);
             
-      sprintf(fileName,"noisePlots__%s/recHitE_vsNPU_%s_%s_log.pdf",label.c_str(),region.c_str(),dataset.c_str());
+      sprintf(fileName,"%s/output/noisePlots__%s/recHitE_vsNPU_%s_%s_log.pdf",baseDir.c_str(),label.c_str(),region.c_str(),dataset.c_str());
       std::string fileNameString2(fileName);
       c_temp2 -> Print((fileNameString2+"[").c_str(),"pdf");      
       
@@ -184,7 +201,6 @@ void drawNoisePlots()
         c_temp -> Print(fileNameString2.c_str(),"pdf");
         delete c_temp;        
         
-        std::cout << "binCenter: " << binCenter << "   RMS: " << histo->GetRMS() << std::endl;
         if( region == "EB" )
         {
           gEB_recHitE_RMS_vsNPU[datasetIt] -> SetPoint(point,binMean,histo->GetRMS());
@@ -229,7 +245,7 @@ void drawNoisePlots()
     
     
     
-    point = 0;
+    int point = 0;
     for(int bin = 1; bin <= h_occupancy_vsIRing->GetNbinsX(); ++bin)
     {  
       float binCenter  = h_occupancy_vsIRing -> GetBinCenter(bin);
@@ -298,7 +314,6 @@ void drawNoisePlots()
       int point2 = 0;
       for(int nPUBin = 1; nPUBin <= h_occupancy_vsNPU->GetNbinsX(); ++nPUBin)
       {
-        float nPUBinCenter  = h_occupancy_vsNPU -> GetBinCenter(nPUBin);
         float nPUBinLowEdge = h_occupancy_vsNPU -> GetBinLowEdge(nPUBin);
         float nPUBinHigEdge = h_occupancy_vsNPU -> GetBinLowEdge(nPUBin) + h_occupancy_vsNPU->GetBinWidth(nPUBin);      
         
@@ -355,7 +370,7 @@ void drawNoisePlots()
   
   char canvasName[50];
   
-  std::string folderName = "noisePlots__" + label + "/";
+  std::string folderName = baseDir+"/output/noisePlots__" + label + "/";
   system(("mkdir "+folderName).c_str());
   
   leg = NULL;
@@ -374,7 +389,7 @@ void drawNoisePlots()
   leg -> Draw("same");
   c -> Print((folderName+"hEB_recHitE.png").c_str(),"png");
   delete c;
-  delete leg;
+  leg = NULL;
   
   sprintf(canvasName,"cEB_recHitE_log");
   TCanvas* clog = new TCanvas(canvasName,canvasName);
@@ -388,11 +403,11 @@ void drawNoisePlots()
   leg -> Draw("same");
   clog -> Print((folderName+"hEB_recHitE_log.png").c_str(),"png");
   delete clog;
-  delete leg;
+  leg = NULL;
   
   
   sprintf(canvasName,"cEB_recHitPedSubADC");
-  TCanvas* c = new TCanvas(canvasName,canvasName);
+  c = new TCanvas(canvasName,canvasName);
   c -> SetGridx();
   c -> SetGridy();
   hEB_recHitPedSubADC[0] -> Draw("P");
@@ -402,10 +417,10 @@ void drawNoisePlots()
   leg -> Draw("same");
   c -> Print((folderName+"hEB_recHitPedSubADC.png").c_str(),"png");
   delete c;
-  delete leg;
+  leg = NULL;
   
   sprintf(canvasName,"cEB_recHitPedSubADC_log");
-  TCanvas* clog = new TCanvas(canvasName,canvasName);
+  clog = new TCanvas(canvasName,canvasName);
   clog -> SetLogy();
   clog -> SetGridx();
   clog -> SetGridy();
@@ -416,11 +431,11 @@ void drawNoisePlots()
   leg -> Draw("same");
   clog -> Print((folderName+"hEB_recHitPedSubADC_log.png").c_str(),"png");
   delete clog;
-  delete leg;
+  leg = NULL;
   
   
   sprintf(canvasName,"cEE_recHitE");
-  TCanvas* c = new TCanvas(canvasName,canvasName);
+  c = new TCanvas(canvasName,canvasName);
   c -> SetGridx();
   c -> SetGridy();
   hEE_recHitE[0] -> Draw("P");
@@ -430,10 +445,10 @@ void drawNoisePlots()
   leg -> Draw("same");
   c -> Print((folderName+"hEE_recHitE.png").c_str(),"png");
   delete c;
-  delete leg;
+  leg = NULL;
   
   sprintf(canvasName,"cEE_recHitE_log");
-  TCanvas* clog = new TCanvas(canvasName,canvasName);
+  clog = new TCanvas(canvasName,canvasName);
   clog -> SetLogy();
   clog -> SetGridx();
   clog -> SetGridy();
@@ -444,11 +459,11 @@ void drawNoisePlots()
   leg -> Draw("same");
   clog -> Print((folderName+"hEE_recHitE_log.png").c_str(),"png");
   delete clog;
-  delete leg;
+  leg = NULL;
   
   
   sprintf(canvasName,"cEE_recHitPedSubADC");
-  TCanvas* c = new TCanvas(canvasName,canvasName);
+  c = new TCanvas(canvasName,canvasName);
   c -> SetGridx();
   c -> SetGridy();
   hEE_recHitPedSubADC[0] -> Draw("P");
@@ -458,10 +473,10 @@ void drawNoisePlots()
   leg -> Draw("same");
   c -> Print((folderName+"hEE_recHitPedSubADC.png").c_str(),"png");
   delete c;
-  delete leg;
+  leg = NULL;
   
   sprintf(canvasName,"cEE_recHitPedSubADC_log");
-  TCanvas* clog = new TCanvas(canvasName,canvasName);
+  clog = new TCanvas(canvasName,canvasName);
   clog -> SetLogy();
   clog -> SetGridx();
   clog -> SetGridy();
@@ -472,7 +487,7 @@ void drawNoisePlots()
   leg -> Draw("same");
   clog -> Print((folderName+"hEE_recHitPedSubADC_log.png").c_str(),"png");
   delete clog;
-  delete leg;
+  leg = NULL;
   
   
   
@@ -491,7 +506,7 @@ void drawNoisePlots()
   leg -> Draw("same");
   c -> Print((folderName+"gEB_recHitE_RMS_vsNPU.png").c_str(),"png");
   delete c;
-  delete leg;
+  leg = NULL;
   
   sprintf(canvasName,"cEE_recHitE_RMS_vsNPU");
   c = new TCanvas(canvasName,canvasName);
@@ -504,7 +519,7 @@ void drawNoisePlots()
   leg -> Draw("same");
   c -> Print((folderName+"gEE_recHitE_RMS_vsNPU.png").c_str(),"png");
   delete c;
-  delete leg;
+  leg = NULL;
   
   
   sprintf(canvasName,"cEB_recHitE_sigma_vsNPU");
@@ -518,7 +533,7 @@ void drawNoisePlots()
   leg -> Draw("same");
   c -> Print((folderName+"gEB_recHitE_sigma_vsNPU.png").c_str(),"png");
   delete c;
-  delete leg;
+  leg = NULL;
   
   sprintf(canvasName,"cEE_recHitE_sigma_vsNPU");
   c = new TCanvas(canvasName,canvasName);
@@ -531,7 +546,7 @@ void drawNoisePlots()
   leg -> Draw("same");
   c -> Print((folderName+"gEE_recHitE_sigma_vsNPU.png").c_str(),"png");
   delete c;
-  delete leg;
+  leg = NULL;
   
     
   sprintf(canvasName,"c_recHitE_RMS_vsIRing");
@@ -546,7 +561,7 @@ void drawNoisePlots()
   leg -> Draw("same");
   c -> Print((folderName+"g_recHitE_RMS_vsIRing.png").c_str(),"png");
   delete c;
-  delete leg;
+  leg = NULL;
   
   sprintf(canvasName,"c_recHitE_RMSAt0PU_vsIRing");
   c = new TCanvas(canvasName,canvasName);
@@ -560,12 +575,12 @@ void drawNoisePlots()
   leg -> Draw("same");
   c -> Print((folderName+"g_recHitE_RMSAt0PU_vsIRing.png").c_str(),"png");
   delete c;
-  delete leg;  
+  leg = NULL;  
 }
 
 
 
-void SetHistoStyle(TH1F* h, const std::string& dataset, const std::string& region, const std::string& type, TLegend** leg, const bool& log = false)
+void SetHistoStyle(TH1F* h, const std::string& dataset, const std::string& region, const std::string& type, TLegend** leg, const bool& log)
 {
   if( (*leg) == NULL )
   {
