@@ -1,0 +1,9 @@
+*.raw
+*.dat
+*.log
+*.conv
+*.gz
+*.exe
+*.o
+*.so
+mydict*

@@ -1,7 +1,7 @@
 #include "../src/setTDRStyle.cc"
 #include "../intefrace/setTDRStyle.h"
 
-std::string label  = "new_DA-runAB__MC-runAB-OOTm300";
+std::string label  = "Upgrade_NoAging_PU0-140";
 std::string label2 = "MC-NuGun-runAB-noPU";
 
 int rebin = 120;
@@ -20,13 +20,13 @@ void drawNoisePlots()
   gStyle->SetOptStat(0);
   gStyle->SetOptFit(0);
   
-    
-  TFile* f2 = TFile::Open(("nuGunGraphs/nuGunGraphs_"+label2+".root").c_str(),"READ");
+  
+  TFile* f2 = TFile::Open(("../output/nuGunGraphs/nuGunGraphs_"+label2+".root").c_str(),"READ");
   TGraph* gNuGun_recHitE_RMS_vsIRing = (TGraph*)( f2->Get("g_recHitE_RMS_vsIRing") );
   gNuGun_recHitE_RMS_vsIRing -> SetLineColor(kBlue);
   gNuGun_recHitE_RMS_vsIRing -> SetLineWidth(2);
   
-  TFile* f  = TFile::Open(("new/studyNoise_" +label +".root").c_str(),"READ");
+  TFile* f  = TFile::Open(("../output/studyNoise_" +label +".root").c_str(),"READ");
   f -> cd();
   
   
