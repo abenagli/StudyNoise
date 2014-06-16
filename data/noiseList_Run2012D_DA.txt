@@ -1,0 +1,1 @@
+/store/group/alca_ecalcalib/ecalMIBI/NTUPLES_EOverP/Winter13/DoubleElectron_Run2012D-ZElectron-PromptSkim-v1_RAW-RECO/

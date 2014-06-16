@@ -1,0 +1,2 @@
+/store/group/alca_ecalcalib/ecalMIBI/NTUPLES_EOverP/Winter13/DoubleElectron_Run2012A-ZElectron-22Jan2013-v1_RAW-RECO/
+/store/group/alca_ecalcalib/ecalMIBI/NTUPLES_EOverP/Winter13/DoubleElectron_Run2012B-ZElectron-22Jan2013-v1_RAW-RECO/

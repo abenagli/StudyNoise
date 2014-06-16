@@ -1,0 +1,11 @@
+DA-runAB__MC-runAB-OOTm300   noiseList_Run2012AB_DA.txt   noiseList_Run2012AB_MC_OOTm300.txt Cert_190456-196531_8TeV_Moriond2013_Run2012AB_Collisions12_PU_adavid.root 1
+DA-runAB__MC-runAB-OOTm50    noiseList_Run2012AB_DA.txt   noiseList_Run2012AB_MC_OOTm50.txt  Cert_190456-196531_8TeV_Moriond2013_Run2012AB_Collisions12_PU_adavid.root 1
+DA-runAB__MC-runAB-noPU      noiseList_Run2012AB_DA.txt   noiseList_Run2012AB_MC_noPU.txt    Cert_190456-196531_8TeV_Moriond2013_Run2012AB_Collisions12_PU_adavid.root 0
+#
+DA-runC__MC-runC-OOTm300     noiseList_Run2012C_DA.txt    noiseList_Run2012C_MC_OOTm300.txt  Cert_198022-203746_8TeV_Moriond2013_Run2012C_Collisions12_PU_adavid.root  1
+DA-runC__MC-runC-OOTm50      noiseList_Run2012C_DA.txt    noiseList_Run2012C_MC_OOTm50.txt   Cert_198022-203746_8TeV_Moriond2013_Run2012C_Collisions12_PU_adavid.root  1
+DA-runC__MC-runC-noPU        noiseList_Run2012C_DA.txt    noiseList_Run2012C_MC_noPU.txt     Cert_198022-203746_8TeV_Moriond2013_Run2012C_Collisions12_PU_adavid.root  0
+#
+DA-runD__MC-runD-OOTm300     noiseList_Run2012D_DA.txt    noiseList_Run2012D_MC_OOTm300.txt  Cert_203768-208686_8TeV_Moriond2013_Run2012D_Collisions12_PU_adavid.root  1
+DA-runD__MC-runD-OOTm50      noiseList_Run2012D_DA.txt    noiseList_Run2012D_MC_OOTm50.txt   Cert_203768-208686_8TeV_Moriond2013_Run2012D_Collisions12_PU_adavid.root  1
+DA-runD__MC-runD-noPU        noiseList_Run2012D_DA.txt    noiseList_Run2012D_MC_noPU.txt     Cert_203768-208686_8TeV_Moriond2013_Run2012D_Collisions12_PU_adavid.root  0

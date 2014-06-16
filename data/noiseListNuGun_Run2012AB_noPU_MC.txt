@@ -1,0 +1,1 @@
+~/eos/cms/store/group/alca_ecalcalib/ecalMIBI/ECALNoise/MC/NuGun_runAB_noPU/simpleNtuple.root

@@ -1,0 +1,10 @@
+~/eos/cms/store/caf/user/ric/UpgradeMC_V2/NoAging/NoPU/ZEE_1_1_6ce.root
+~/eos/cms/store/caf/user/ric/UpgradeMC_V2/NoAging/NoPU/ZEE_2_1_RK3.root
+~/eos/cms/store/caf/user/ric/UpgradeMC_V2/NoAging/NoPU/ZEE_3_1_9NL.root
+~/eos/cms/store/caf/user/ric/UpgradeMC_V2/NoAging/PU70/ZEE_1_2_OKk.root
+~/eos/cms/store/caf/user/ric/UpgradeMC_V2/NoAging/PU70/ZEE_3_2_Nvj.root
+~/eos/cms/store/caf/user/ric/UpgradeMC_V2/NoAging/PU70/ZEE_4_2_SSl.root
+~/eos/cms/store/caf/user/ric/UpgradeMC_V2/NoAging/PU70/ZEE_5_2_pU2.root
+~/eos/cms/store/caf/user/ric/UpgradeMC_V2/NoAging/PU140/ZEE_1_1_ALz.root
+~/eos/cms/store/caf/user/ric/UpgradeMC_V2/NoAging/PU140/ZEE_2_1_D6j.root
+~/eos/cms/store/caf/user/ric/UpgradeMC_V2/NoAging/PU140/ZEE_3_1_eU4.root

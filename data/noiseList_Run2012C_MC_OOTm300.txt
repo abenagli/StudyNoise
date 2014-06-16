@@ -1,0 +1,1 @@
+/store/group/alca_ecalcalib/ecalMIBI/ECALNoise/MC/DYJetsToLL_M-50_TuneZ2Star_8TeV-madgraph-tarball_Summer12-START50_V13-v1_GEN-SIM_runC_OOTm300_ok/
