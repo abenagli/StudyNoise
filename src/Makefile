@@ -127,7 +127,7 @@ $(LIB)$(SONAME): $(OBJS) $(OBJ)mydict.o
 	$(LD) $(LDFLAGS) $(OBJS) $(OBJ)mydict.o $(SOFLAGS) -o $(LIB)$(SONAME)
 
 $(BIN)%$(BinSuf): $(PRG)%$(PrgSuf) $(HDRS) $(LIB)$(SONAME)
-	$(CPP) $(CPPFLAGS) -L$(LIB) $(GLIBS) -lCompareVariables -o $@ $<
+	$(CPP) $(CPPFLAGS) -L$(LIB) $(GLIBS) -lStudyNoise -o $@ $<
 
 
 clean:
