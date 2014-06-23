@@ -79,8 +79,10 @@ int main(int argc, char** argv)
   std::string avgPUListFile = gConfigParser -> readStringOption("Input::avgPUListFile");
   std::string EERingsFile   = gConfigParser -> readStringOption("Input::EERingsFile");
   
-  std::string nPUAxisFile   = gConfigParser -> readStringOption("Input::nPUAxisFile");
-  std::string iRingAxisFile = gConfigParser -> readStringOption("Input::iRingAxisFile");
+  std::string nPUAxisFile    = gConfigParser -> readStringOption("Input::nPUAxisFile");
+  std::string iRingAxisFile  = gConfigParser -> readStringOption("Input::iRingAxisFile");
+  std::string etaAxisFile    = gConfigParser -> readStringOption("Input::etaAxisFile");
+  std::string absEtaAxisFile = gConfigParser -> readStringOption("Input::absEtaAxisFile");
   
   std::string label = gConfigParser -> readStringOption("Options::label");
   int PUReweighting = gConfigParser -> readIntOption("Options::PUReweighting");
@@ -142,6 +144,11 @@ int main(int argc, char** argv)
   std::vector<float> iRing_axis; ReadAxis(iRingAxisFile,iRing_axis);
   int nBins_iRing = int(iRing_axis.size()-1);
   
+  std::vector<float> eta_axis; ReadAxis(etaAxisFile,eta_axis);
+  int nBins_eta = int(eta_axis.size()-1);
+  
+  std::vector<float> absEta_axis; ReadAxis(absEtaAxisFile,absEta_axis);
+  int nBins_absEta = int(absEta_axis.size()-1);
   
   
   
@@ -151,6 +158,8 @@ int main(int argc, char** argv)
   std::map<std::string,std::map<std::string,TH1F*> > h_nVtx;
   std::map<std::string,std::map<std::string,TH1F*> > h_occupancy_vsNPU;
   std::map<std::string,std::map<std::string,TH1F*> > h_occupancy_vsIRing;
+  std::map<std::string,std::map<std::string,TH1F*> > h_occupancy_vsEta;
+  std::map<std::string,std::map<std::string,TH1F*> > h_occupancy_vsAbsEta;
   
   std::map<std::string,std::map<std::string,TProfile2D*> > p_recHitADC;
   
@@ -159,20 +168,31 @@ int main(int argc, char** argv)
   std::map<std::string,std::map<std::string,TH1F*> > h_recHitE;
   std::map<std::string,std::map<std::string,std::map<std::string,TH1F*> > > h_nPUDistr_vsNPU;
   std::map<std::string,std::map<std::string,std::map<std::string,TH1F*> > > h_nPUDistr_vsNPUIRing;
+  std::map<std::string,std::map<std::string,std::map<std::string,TH1F*> > > h_nPUDistr_vsNPUEta;
+  std::map<std::string,std::map<std::string,std::map<std::string,TH1F*> > > h_nPUDistr_vsNPUAbsEta;
   std::map<std::string,std::map<std::string,std::map<std::string,TH1F*> > > h_recHitPedSubADC_vsNPU;
   std::map<std::string,std::map<std::string,std::map<std::string,TH1F*> > > h_recHitPedSubADC_vsIRing;
+  std::map<std::string,std::map<std::string,std::map<std::string,TH1F*> > > h_recHitPedSubADC_vsEta;
+  std::map<std::string,std::map<std::string,std::map<std::string,TH1F*> > > h_recHitPedSubADC_vsAbsEta;
   std::map<std::string,std::map<std::string,std::map<std::string,TH1F*> > > h_recHitPedSubADC_vsNPUIRing;
+  std::map<std::string,std::map<std::string,std::map<std::string,TH1F*> > > h_recHitPedSubADC_vsNPUEta;
+  std::map<std::string,std::map<std::string,std::map<std::string,TH1F*> > > h_recHitPedSubADC_vsNPUAbsEta;
   std::map<std::string,std::map<std::string,std::map<std::string,TH1F*> > > h_recHitE_vsNPU;
   std::map<std::string,std::map<std::string,std::map<std::string,TH1F*> > > h_recHitE_vsIRing;
+  std::map<std::string,std::map<std::string,std::map<std::string,TH1F*> > > h_recHitE_vsEta;
+  std::map<std::string,std::map<std::string,std::map<std::string,TH1F*> > > h_recHitE_vsAbsEta;
   std::map<std::string,std::map<std::string,std::map<std::string,TH1F*> > > h_recHitE_vsNPUIRing;
+  std::map<std::string,std::map<std::string,std::map<std::string,TH1F*> > > h_recHitE_vsNPUEta;
+  std::map<std::string,std::map<std::string,std::map<std::string,TH1F*> > > h_recHitE_vsNPUAbsEta;
   
+  std::cout << ">>> define histograms" << std::endl;
   for(int datasetIt = 0; datasetIt < nDatasets; ++datasetIt)
   {
     for(int regionIt = 0; regionIt < nRegions; ++regionIt)
     {
       std::string dataset = datasets.at(datasetIt);
       std::string region = regions.at(regionIt);
-      
+      std::cout << ">>>>>> dataset: " << dataset << "   region: " << region << std::endl;
       
       std::string histoName = "h_nVtx_" + region + "_" + dataset;
       (h_nVtx[dataset])[region] = new TH1F(histoName.c_str(),"",200,-0.5,199.5);
@@ -187,6 +207,16 @@ int main(int argc, char** argv)
       (h_occupancy_vsIRing[dataset])[region] = new TH1F(histoName.c_str(),"",nBins_iRing,1.,126.);
       (h_occupancy_vsIRing[dataset])[region] -> Sumw2();
       MySetAxisBins((h_occupancy_vsIRing[dataset])[region],iRing_axis);
+      
+      histoName = "h_occupancy_vsEta_" + region + "_" + dataset;
+      (h_occupancy_vsEta[dataset])[region] = new TH1F(histoName.c_str(),"",nBins_eta,-2.5,2.5);
+      (h_occupancy_vsEta[dataset])[region] -> Sumw2();
+      MySetAxisBins((h_occupancy_vsEta[dataset])[region],eta_axis);
+      
+      histoName = "h_occupancy_vsAbsEta_" + region + "_" + dataset;
+      (h_occupancy_vsAbsEta[dataset])[region] = new TH1F(histoName.c_str(),"",nBins_absEta,0,2.5);
+      (h_occupancy_vsAbsEta[dataset])[region] -> Sumw2();
+      MySetAxisBins((h_occupancy_vsAbsEta[dataset])[region],absEta_axis);
       
       
       histoName = "p_recHitADC_" + region + "_" + dataset;
@@ -207,6 +237,8 @@ int main(int argc, char** argv)
       (h_recHitE[dataset])[region] = new TH1F(histoName.c_str(),"",nBins_recHitE,recHitEMin,recHitEMax);
       (h_recHitE[dataset])[region] -> Sumw2();
       
+      std::cout << ">>>>>> global histos defined" << std::endl;
+      
       
       for(int nPUIt = 0; nPUIt < nBins_nPU; ++nPUIt)
       {
@@ -226,6 +258,8 @@ int main(int argc, char** argv)
         ((h_recHitE_vsNPU[dataset])[region])[nPUString] = new TH1F(histoName.c_str(),"",nBins_recHitE,recHitEMin,recHitEMax);
         ((h_recHitE_vsNPU[dataset])[region])[nPUString] -> Sumw2();
       }
+      std::cout << ">>>>>> histos vs nPU defined" << std::endl;
+      
       for(int iRingIt = 0; iRingIt < nBins_iRing; ++iRingIt)
       {
         char iRingChar[50];
@@ -240,6 +274,40 @@ int main(int argc, char** argv)
         ((h_recHitE_vsIRing[dataset])[region])[iRingString] = new TH1F(histoName.c_str(),"",nBins_recHitE,recHitEMin,recHitEMax);
         ((h_recHitE_vsIRing[dataset])[region])[iRingString] -> Sumw2();
       }
+      std::cout << ">>>>>> histos vs iRing defined" << std::endl;
+      
+      for(int etaIt = 0; etaIt < nBins_eta; ++etaIt)
+      {
+        char etaChar[50];
+        sprintf(etaChar,"eta%1.4f-%1.4f",eta_axis.at(etaIt),eta_axis.at(etaIt+1));
+        std::string etaString(etaChar);
+        
+        histoName = "h_recHitPedSubADC_" + etaString + "_" + region + "_" + dataset;
+        ((h_recHitPedSubADC_vsEta[dataset])[region])[etaString] = new TH1F(histoName.c_str(),"",nBins_recHitPedSubADC,recHitPedSubADCMin,recHitPedSubADCMax);
+        ((h_recHitPedSubADC_vsEta[dataset])[region])[etaString] -> Sumw2();
+        
+        histoName = "h_recHitE_" + etaString + "_" + region + "_" + dataset;
+        ((h_recHitE_vsEta[dataset])[region])[etaString] = new TH1F(histoName.c_str(),"",nBins_recHitE,recHitEMin,recHitEMax);
+        ((h_recHitE_vsEta[dataset])[region])[etaString] -> Sumw2();
+      }
+      std::cout << ">>>>>> histos vs eta defined" << std::endl;
+      
+      for(int absEtaIt = 0; absEtaIt < nBins_absEta; ++absEtaIt)
+      {
+        char absEtaChar[50];
+        sprintf(absEtaChar,"absEta%1.4f-%1.4f",absEta_axis.at(absEtaIt),absEta_axis.at(absEtaIt+1));
+        std::string absEtaString(absEtaChar);
+        
+        histoName = "h_recHitPedSubADC_" + absEtaString + "_" + region + "_" + dataset;
+        ((h_recHitPedSubADC_vsAbsEta[dataset])[region])[absEtaString] = new TH1F(histoName.c_str(),"",nBins_recHitPedSubADC,recHitPedSubADCMin,recHitPedSubADCMax);
+        ((h_recHitPedSubADC_vsAbsEta[dataset])[region])[absEtaString] -> Sumw2();
+        
+        histoName = "h_recHitE_" + absEtaString + "_" + region + "_" + dataset;
+        ((h_recHitE_vsAbsEta[dataset])[region])[absEtaString] = new TH1F(histoName.c_str(),"",nBins_recHitE,recHitEMin,recHitEMax);
+        ((h_recHitE_vsAbsEta[dataset])[region])[absEtaString] -> Sumw2();
+      }
+      std::cout << ">>>>>> histos vs absEta defined" << std::endl;
+      
       for(int nPUIt = 0; nPUIt < nBins_nPU; ++nPUIt)
         for(int iRingIt = 0; iRingIt < nBins_iRing; ++iRingIt)
         {
@@ -259,6 +327,49 @@ int main(int argc, char** argv)
           ((h_recHitE_vsNPUIRing[dataset])[region])[nPUIRingString] = new TH1F(histoName.c_str(),"",nBins_recHitE,recHitEMin,recHitEMax);
           ((h_recHitE_vsNPUIRing[dataset])[region])[nPUIRingString] -> Sumw2();
         }
+      std::cout << ">>>>>> histos vs nPU-iRing defined" << std::endl;
+      
+      for(int nPUIt = 0; nPUIt < nBins_nPU; ++nPUIt)
+        for(int etaIt = 0; etaIt < nBins_eta; ++etaIt)
+        {
+          char nPUEtaChar[50];
+          sprintf(nPUEtaChar,"nPU%2.1f-%2.1f__eta%1.4f-%1.4f",nPU_axis.at(nPUIt),nPU_axis.at(nPUIt+1),eta_axis.at(etaIt),eta_axis.at(etaIt+1));        
+          std::string nPUEtaString(nPUEtaChar);
+          
+          histoName = "h_nPUDistr_" + nPUEtaString + "_" + region + "_" + dataset;
+          ((h_nPUDistr_vsNPUEta[dataset])[region])[nPUEtaString] = new TH1F(histoName.c_str(),"",500,0.,500.);
+          ((h_nPUDistr_vsNPUEta[dataset])[region])[nPUEtaString] -> Sumw2();
+          
+          histoName = "h_recHitPedSubADC_" + nPUEtaString + "_" + region + "_" + dataset;
+          ((h_recHitPedSubADC_vsNPUEta[dataset])[region])[nPUEtaString] = new TH1F(histoName.c_str(),"",nBins_recHitPedSubADC,recHitPedSubADCMin,recHitPedSubADCMax);
+          ((h_recHitPedSubADC_vsNPUEta[dataset])[region])[nPUEtaString] -> Sumw2();
+          
+          histoName = "h_recHitE_" + nPUEtaString + "_" + region + "_" + dataset;
+          ((h_recHitE_vsNPUEta[dataset])[region])[nPUEtaString] = new TH1F(histoName.c_str(),"",nBins_recHitE,recHitEMin,recHitEMax);
+          ((h_recHitE_vsNPUEta[dataset])[region])[nPUEtaString] -> Sumw2();
+        }
+      std::cout << ">>>>>> histos vs nPU-eta defined" << std::endl;
+      
+      for(int nPUIt = 0; nPUIt < nBins_nPU; ++nPUIt)
+        for(int absEtaIt = 0; absEtaIt < nBins_absEta; ++absEtaIt)
+        {
+          char nPUAbsEtaChar[50];
+          sprintf(nPUAbsEtaChar,"nPU%2.1f-%2.1f__absEta%1.4f-%1.4f",nPU_axis.at(nPUIt),nPU_axis.at(nPUIt+1),absEta_axis.at(absEtaIt),absEta_axis.at(absEtaIt+1));        
+          std::string nPUAbsEtaString(nPUAbsEtaChar);
+          
+          histoName = "h_nPUDistr_" + nPUAbsEtaString + "_" + region + "_" + dataset;
+          ((h_nPUDistr_vsNPUAbsEta[dataset])[region])[nPUAbsEtaString] = new TH1F(histoName.c_str(),"",500,0.,500.);
+          ((h_nPUDistr_vsNPUAbsEta[dataset])[region])[nPUAbsEtaString] -> Sumw2();
+          
+          histoName = "h_recHitPedSubADC_" + nPUAbsEtaString + "_" + region + "_" + dataset;
+          ((h_recHitPedSubADC_vsNPUAbsEta[dataset])[region])[nPUAbsEtaString] = new TH1F(histoName.c_str(),"",nBins_recHitPedSubADC,recHitPedSubADCMin,recHitPedSubADCMax);
+          ((h_recHitPedSubADC_vsNPUAbsEta[dataset])[region])[nPUAbsEtaString] -> Sumw2();
+          
+          histoName = "h_recHitE_" + nPUAbsEtaString + "_" + region + "_" + dataset;
+          ((h_recHitE_vsNPUAbsEta[dataset])[region])[nPUAbsEtaString] = new TH1F(histoName.c_str(),"",nBins_recHitE,recHitEMin,recHitEMax);
+          ((h_recHitE_vsNPUAbsEta[dataset])[region])[nPUAbsEtaString] -> Sumw2();
+        }
+      std::cout << ">>>>>> histos vs nPU-absEta defined" << std::endl;
     }
   }
   
@@ -384,6 +495,8 @@ int main(int argc, char** argv)
           float recHit_iphi  = ele1_recHit_iphi->at(rhIt);
           float recHit_iRing = recHit_ieta;
           if( ele1_region == "EE" ) recHit_iRing = ele1_seedIz * (86 + EERings->GetEndcapRing(recHit_ieta,recHit_iphi,ele1_seedIz));
+          float recHit_eta = GetEtaFromIRing(recHit_iRing);
+          float recHit_absEta = fabs(recHit_eta);
           
           bool farRecHit = CheckSeedDistance(recHit_ieta,recHit_iphi,ele1_seedIeta,ele1_seedIphi,ele1_seedIz);
           
@@ -396,24 +509,50 @@ int main(int argc, char** argv)
           char nPUChar[50];
           sprintf(nPUChar,"nPU%2.1f-%2.1f",nPU_axis.at(nPUBin-1),nPU_axis.at(nPUBin));
           std::string nPUString(nPUChar);
-          
-          int iRingBin = (h_occupancy_vsIRing[dataset])[ele1_region] -> Fill(recHit_iRing,PUWeight);
+         
+           int iRingBin = (h_occupancy_vsIRing[dataset])[ele1_region] -> Fill(recHit_iRing,PUWeight);
           if( iRingBin < 1 || iRingBin > nBins_iRing ) continue;
           char iRingChar[50];
           sprintf(iRingChar,"iRing%2.1f-%2.1f",iRing_axis.at(iRingBin-1),iRing_axis.at(iRingBin));
           std::string iRingString(iRingChar);
           
+          int etaBin = (h_occupancy_vsEta[dataset])[ele1_region] -> Fill(recHit_eta,PUWeight);
+          if( etaBin < 1 || etaBin > nBins_eta ) continue;
+          char etaChar[50];
+          sprintf(etaChar,"eta%1.4f-%1.4f",eta_axis.at(etaBin-1),eta_axis.at(etaBin));
+          std::string etaString(etaChar);
+          
+          int absEtaBin = (h_occupancy_vsAbsEta[dataset])[ele1_region] -> Fill(recHit_absEta,PUWeight);
+          if( absEtaBin < 1 || absEtaBin > nBins_absEta ) continue;
+          char absEtaChar[50];
+          sprintf(absEtaChar,"absEta%1.4f-%1.4f",absEta_axis.at(absEtaBin-1),absEta_axis.at(absEtaBin));
+          std::string absEtaString(absEtaChar);
+          
           char nPUIRingChar[50];
           sprintf(nPUIRingChar,"nPU%2.1f-%2.1f__iRing%2.1f-%2.1f",nPU_axis.at(nPUBin-1),nPU_axis.at(nPUBin),iRing_axis.at(iRingBin-1),iRing_axis.at(iRingBin));
           std::string nPUIRingString(nPUIRingChar);
           
-          ((h_nPUDistr_vsNPU[dataset])     [ele1_region])[nPUString]      -> Fill(nPU);
-          ((h_nPUDistr_vsNPUIRing[dataset])[ele1_region])[nPUIRingString] -> Fill(nPU);
+          char nPUEtaChar[50];
+          sprintf(nPUEtaChar,"nPU%2.1f-%2.1f__eta%1.4f-%1.4f",nPU_axis.at(nPUBin-1),nPU_axis.at(nPUBin),eta_axis.at(etaBin-1),eta_axis.at(etaBin));
+          std::string nPUEtaString(nPUEtaChar);
           
-          (h_recHitE[dataset])            [ele1_region]                  -> Fill(recHit_E,PUWeight);
-          ((h_recHitE_vsNPU[dataset])     [ele1_region])[nPUString]      -> Fill(recHit_E);
-          ((h_recHitE_vsIRing[dataset])   [ele1_region])[iRingString]    -> Fill(recHit_E,PUWeight);
-          ((h_recHitE_vsNPUIRing[dataset])[ele1_region])[nPUIRingString] -> Fill(recHit_E);
+          char nPUAbsEtaChar[50];
+          sprintf(nPUAbsEtaChar,"nPU%2.1f-%2.1f__absEta%1.4f-%1.4f",nPU_axis.at(nPUBin-1),nPU_axis.at(nPUBin),absEta_axis.at(absEtaBin-1),absEta_axis.at(absEtaBin));
+          std::string nPUAbsEtaString(nPUAbsEtaChar);
+          
+          ((h_nPUDistr_vsNPU[dataset])      [ele1_region])[nPUString]       -> Fill(nPU);
+          ((h_nPUDistr_vsNPUIRing[dataset]) [ele1_region])[nPUIRingString]  -> Fill(nPU);
+          ((h_nPUDistr_vsNPUEta[dataset])   [ele1_region])[nPUEtaString]    -> Fill(nPU);
+          ((h_nPUDistr_vsNPUAbsEta[dataset])[ele1_region])[nPUAbsEtaString] -> Fill(nPU);
+          
+          (h_recHitE[dataset])             [ele1_region]                   -> Fill(recHit_E,PUWeight);
+          ((h_recHitE_vsNPU[dataset])      [ele1_region])[nPUString]       -> Fill(recHit_E);
+          ((h_recHitE_vsIRing[dataset])    [ele1_region])[iRingString]     -> Fill(recHit_E,PUWeight);
+          ((h_recHitE_vsEta[dataset])      [ele1_region])[etaString]       -> Fill(recHit_E,PUWeight);
+          ((h_recHitE_vsAbsEta[dataset])   [ele1_region])[absEtaString]    -> Fill(recHit_E,PUWeight);
+          ((h_recHitE_vsNPUIRing[dataset]) [ele1_region])[nPUIRingString]  -> Fill(recHit_E);
+          ((h_recHitE_vsNPUEta[dataset])   [ele1_region])[nPUEtaString]    -> Fill(recHit_E);
+          ((h_recHitE_vsNPUAbsEta[dataset])[ele1_region])[nPUAbsEtaString] -> Fill(recHit_E);
           
           float pedestal = 0.;
           for(int sampleIt = 0; sampleIt < 10; ++sampleIt)
@@ -429,10 +568,14 @@ int main(int argc, char** argv)
           for(int sampleIt = 0; sampleIt < 10; ++sampleIt)
           {
             float recHit_ADC = ele1_recHit_ADC->at(rhIt*10+sampleIt);
-            (h_recHitPedSubADC[dataset])            [ele1_region]                  -> Fill(recHit_ADC-pedestal,PUWeight);
-            ((h_recHitPedSubADC_vsNPU[dataset])     [ele1_region])[nPUString]      -> Fill(recHit_ADC-pedestal);
-            ((h_recHitPedSubADC_vsIRing[dataset])   [ele1_region])[iRingString]    -> Fill(recHit_ADC-pedestal,PUWeight);
-            ((h_recHitPedSubADC_vsNPUIRing[dataset])[ele1_region])[nPUIRingString] -> Fill(recHit_ADC-pedestal);
+            (h_recHitPedSubADC[dataset])             [ele1_region]                   -> Fill(recHit_ADC-pedestal,PUWeight);
+            ((h_recHitPedSubADC_vsNPU[dataset])      [ele1_region])[nPUString]       -> Fill(recHit_ADC-pedestal);
+            ((h_recHitPedSubADC_vsIRing[dataset])    [ele1_region])[iRingString]     -> Fill(recHit_ADC-pedestal,PUWeight);
+            ((h_recHitPedSubADC_vsEta[dataset])      [ele1_region])[etaString]       -> Fill(recHit_ADC-pedestal,PUWeight);
+            ((h_recHitPedSubADC_vsAbsEta[dataset])   [ele1_region])[absEtaString]    -> Fill(recHit_ADC-pedestal,PUWeight);
+            ((h_recHitPedSubADC_vsNPUIRing[dataset]) [ele1_region])[nPUIRingString]  -> Fill(recHit_ADC-pedestal);
+            ((h_recHitPedSubADC_vsNPUEta[dataset])   [ele1_region])[nPUEtaString]    -> Fill(recHit_ADC-pedestal);
+            ((h_recHitPedSubADC_vsNPUAbsEta[dataset])[ele1_region])[nPUAbsEtaString] -> Fill(recHit_ADC-pedestal);
           }
         }
       }    
@@ -464,6 +607,8 @@ int main(int argc, char** argv)
           float recHit_iphi  = ele2_recHit_iphi->at(rhIt);
           float recHit_iRing = recHit_ieta;
           if( ele2_region == "EE" ) recHit_iRing = ele2_seedIz * (86 + EERings->GetEndcapRing(recHit_ieta,recHit_iphi,ele2_seedIz));
+          float recHit_eta = GetEtaFromIRing(recHit_iRing);
+          float recHit_absEta = fabs(recHit_eta);
           
           bool farRecHit = CheckSeedDistance(recHit_ieta,recHit_iphi,ele2_seedIeta,ele2_seedIphi,ele2_seedIz);
           
@@ -476,24 +621,50 @@ int main(int argc, char** argv)
           char nPUChar[50];
           sprintf(nPUChar,"nPU%2.1f-%2.1f",nPU_axis.at(nPUBin-1),nPU_axis.at(nPUBin));
           std::string nPUString(nPUChar);
-          
-          int iRingBin = (h_occupancy_vsIRing[dataset])[ele2_region] -> Fill(recHit_iRing,PUWeight);
+         
+           int iRingBin = (h_occupancy_vsIRing[dataset])[ele2_region] -> Fill(recHit_iRing,PUWeight);
           if( iRingBin < 1 || iRingBin > nBins_iRing ) continue;
           char iRingChar[50];
           sprintf(iRingChar,"iRing%2.1f-%2.1f",iRing_axis.at(iRingBin-1),iRing_axis.at(iRingBin));
           std::string iRingString(iRingChar);
           
+          int etaBin = (h_occupancy_vsEta[dataset])[ele2_region] -> Fill(recHit_eta,PUWeight);
+          if( etaBin < 1 || etaBin > nBins_eta ) continue;
+          char etaChar[50];
+          sprintf(etaChar,"eta%1.4f-%1.4f",eta_axis.at(etaBin-1),eta_axis.at(etaBin));
+          std::string etaString(etaChar);
+          
+          int absEtaBin = (h_occupancy_vsAbsEta[dataset])[ele2_region] -> Fill(recHit_absEta,PUWeight);
+          if( absEtaBin < 1 || absEtaBin > nBins_absEta ) continue;
+          char absEtaChar[50];
+          sprintf(absEtaChar,"absEta%1.4f-%1.4f",absEta_axis.at(absEtaBin-1),absEta_axis.at(absEtaBin));
+          std::string absEtaString(absEtaChar);
+          
           char nPUIRingChar[50];
           sprintf(nPUIRingChar,"nPU%2.1f-%2.1f__iRing%2.1f-%2.1f",nPU_axis.at(nPUBin-1),nPU_axis.at(nPUBin),iRing_axis.at(iRingBin-1),iRing_axis.at(iRingBin));
           std::string nPUIRingString(nPUIRingChar);
           
-          ((h_nPUDistr_vsNPU[dataset])     [ele2_region])[nPUString]      -> Fill(nPU);
-          ((h_nPUDistr_vsNPUIRing[dataset])[ele2_region])[nPUIRingString] -> Fill(nPU);
+          char nPUEtaChar[50];
+          sprintf(nPUEtaChar,"nPU%2.1f-%2.1f__eta%1.4f-%1.4f",nPU_axis.at(nPUBin-1),nPU_axis.at(nPUBin),eta_axis.at(etaBin-1),eta_axis.at(etaBin));
+          std::string nPUEtaString(nPUEtaChar);
           
-          (h_recHitE[dataset])            [ele2_region]                  -> Fill(recHit_E,PUWeight);
-          ((h_recHitE_vsNPU[dataset])     [ele2_region])[nPUString]      -> Fill(recHit_E);
-          ((h_recHitE_vsIRing[dataset])   [ele2_region])[iRingString]    -> Fill(recHit_E,PUWeight);
-          ((h_recHitE_vsNPUIRing[dataset])[ele2_region])[nPUIRingString] -> Fill(recHit_E);
+          char nPUAbsEtaChar[50];
+          sprintf(nPUAbsEtaChar,"nPU%2.1f-%2.1f__absEta%1.4f-%1.4f",nPU_axis.at(nPUBin-1),nPU_axis.at(nPUBin),absEta_axis.at(absEtaBin-1),absEta_axis.at(absEtaBin));
+          std::string nPUAbsEtaString(nPUAbsEtaChar);
+          
+          ((h_nPUDistr_vsNPU[dataset])      [ele2_region])[nPUString]       -> Fill(nPU);
+          ((h_nPUDistr_vsNPUIRing[dataset]) [ele2_region])[nPUIRingString]  -> Fill(nPU);
+          ((h_nPUDistr_vsNPUEta[dataset])   [ele2_region])[nPUEtaString]    -> Fill(nPU);
+          ((h_nPUDistr_vsNPUAbsEta[dataset])[ele2_region])[nPUAbsEtaString] -> Fill(nPU);
+          
+          (h_recHitE[dataset])             [ele2_region]                   -> Fill(recHit_E,PUWeight);
+          ((h_recHitE_vsNPU[dataset])      [ele2_region])[nPUString]       -> Fill(recHit_E);
+          ((h_recHitE_vsIRing[dataset])    [ele2_region])[iRingString]     -> Fill(recHit_E,PUWeight);
+          ((h_recHitE_vsEta[dataset])      [ele2_region])[etaString]       -> Fill(recHit_E,PUWeight);
+          ((h_recHitE_vsAbsEta[dataset])   [ele2_region])[absEtaString]    -> Fill(recHit_E,PUWeight);
+          ((h_recHitE_vsNPUIRing[dataset]) [ele2_region])[nPUIRingString]  -> Fill(recHit_E);
+          ((h_recHitE_vsNPUEta[dataset])   [ele2_region])[nPUEtaString]    -> Fill(recHit_E);
+          ((h_recHitE_vsNPUAbsEta[dataset])[ele2_region])[nPUAbsEtaString] -> Fill(recHit_E);
           
           float pedestal = 0.;
           for(int sampleIt = 0; sampleIt < 10; ++sampleIt)
@@ -509,10 +680,14 @@ int main(int argc, char** argv)
           for(int sampleIt = 0; sampleIt < 10; ++sampleIt)
           {
             float recHit_ADC = ele2_recHit_ADC->at(rhIt*10+sampleIt);
-            (h_recHitPedSubADC[dataset])            [ele2_region]                  -> Fill(recHit_ADC-pedestal,PUWeight);
-            ((h_recHitPedSubADC_vsNPU[dataset])     [ele2_region])[nPUString]      -> Fill(recHit_ADC-pedestal);
-            ((h_recHitPedSubADC_vsIRing[dataset])   [ele2_region])[iRingString]    -> Fill(recHit_ADC-pedestal,PUWeight);
-            ((h_recHitPedSubADC_vsNPUIRing[dataset])[ele2_region])[nPUIRingString] -> Fill(recHit_ADC-pedestal);
+            (h_recHitPedSubADC[dataset])             [ele2_region]                   -> Fill(recHit_ADC-pedestal,PUWeight);
+            ((h_recHitPedSubADC_vsNPU[dataset])      [ele2_region])[nPUString]       -> Fill(recHit_ADC-pedestal);
+            ((h_recHitPedSubADC_vsIRing[dataset])    [ele2_region])[iRingString]     -> Fill(recHit_ADC-pedestal,PUWeight);
+            ((h_recHitPedSubADC_vsEta[dataset])      [ele2_region])[etaString]       -> Fill(recHit_ADC-pedestal,PUWeight);
+            ((h_recHitPedSubADC_vsAbsEta[dataset])   [ele2_region])[absEtaString]    -> Fill(recHit_ADC-pedestal,PUWeight);
+            ((h_recHitPedSubADC_vsNPUIRing[dataset]) [ele2_region])[nPUIRingString]  -> Fill(recHit_ADC-pedestal);
+            ((h_recHitPedSubADC_vsNPUEta[dataset])   [ele2_region])[nPUEtaString]    -> Fill(recHit_ADC-pedestal);
+            ((h_recHitPedSubADC_vsNPUAbsEta[dataset])[ele2_region])[nPUAbsEtaString] -> Fill(recHit_ADC-pedestal);
           }
         }
       }    
@@ -542,6 +717,8 @@ int main(int argc, char** argv)
       
       (h_occupancy_vsNPU[dataset])[region] -> Write();
       (h_occupancy_vsIRing[dataset])[region] -> Write();
+      (h_occupancy_vsEta[dataset])[region] -> Write();
+      (h_occupancy_vsAbsEta[dataset])[region] -> Write();
       
       (p_recHitADC[dataset])[region] -> Write();
       WriteNormalized( (h_recHitADC[dataset])[region] );
@@ -571,6 +748,28 @@ int main(int argc, char** argv)
         WriteNormalized( ((h_recHitE_vsIRing[dataset])[region])[iRingString] );
       }
       
+      c3 = c2 -> mkdir("plots_vs_eta");
+      c3 -> cd();
+      for(int etaIt = 0; etaIt < nBins_eta; ++etaIt)
+      {
+        char etaChar[50];
+        sprintf(etaChar,"eta%1.4f-%1.4f",eta_axis.at(etaIt),eta_axis.at(etaIt+1));
+        std::string etaString(etaChar);
+        WriteNormalized( ((h_recHitPedSubADC_vsEta[dataset])[region])[etaString] );
+        WriteNormalized( ((h_recHitE_vsEta[dataset])[region])[etaString] );
+      }
+      
+      c3 = c2 -> mkdir("plots_vs_absEta");
+      c3 -> cd();
+      for(int absEtaIt = 0; absEtaIt < nBins_absEta; ++absEtaIt)
+      {
+        char absEtaChar[50];
+        sprintf(absEtaChar,"absEta%1.4f-%1.4f",absEta_axis.at(absEtaIt),absEta_axis.at(absEtaIt+1));
+        std::string absEtaString(absEtaChar);
+        WriteNormalized( ((h_recHitPedSubADC_vsAbsEta[dataset])[region])[absEtaString] );
+        WriteNormalized( ((h_recHitE_vsAbsEta[dataset])[region])[absEtaString] );
+      }
+      
       c3 = c2 -> mkdir("plots_vs_nPU_and_iRing");
       c3 -> cd();
       for(int nPUIt = 0; nPUIt < nBins_nPU; ++nPUIt)
@@ -582,6 +781,32 @@ int main(int argc, char** argv)
           WriteNormalized( ((h_nPUDistr_vsNPUIRing[dataset])[region])[nPUIRingString] );
           WriteNormalized( ((h_recHitPedSubADC_vsNPUIRing[dataset])[region])[nPUIRingString] );
           WriteNormalized( ((h_recHitE_vsNPUIRing[dataset])[region])[nPUIRingString] );
+        }
+      
+      c3 = c2 -> mkdir("plots_vs_nPU_and_eta");
+      c3 -> cd();
+      for(int nPUIt = 0; nPUIt < nBins_nPU; ++nPUIt)
+        for(int etaIt = 0; etaIt < nBins_eta; ++etaIt)
+        {
+          char nPUEtaChar[50];
+          sprintf(nPUEtaChar,"nPU%2.1f-%2.1f__eta%1.4f-%1.4f",nPU_axis.at(nPUIt),nPU_axis.at(nPUIt+1),eta_axis.at(etaIt),eta_axis.at(etaIt+1));
+          std::string nPUEtaString(nPUEtaChar);
+          WriteNormalized( ((h_nPUDistr_vsNPUEta[dataset])[region])[nPUEtaString] );
+          WriteNormalized( ((h_recHitPedSubADC_vsNPUEta[dataset])[region])[nPUEtaString] );
+          WriteNormalized( ((h_recHitE_vsNPUEta[dataset])[region])[nPUEtaString] );
+        }
+      
+      c3 = c2 -> mkdir("plots_vs_nPU_and_absEta");
+      c3 -> cd();
+      for(int nPUIt = 0; nPUIt < nBins_nPU; ++nPUIt)
+        for(int absEtaIt = 0; absEtaIt < nBins_absEta; ++absEtaIt)
+        {
+          char nPUAbsEtaChar[50];
+          sprintf(nPUAbsEtaChar,"nPU%2.1f-%2.1f__absEta%1.4f-%1.4f",nPU_axis.at(nPUIt),nPU_axis.at(nPUIt+1),absEta_axis.at(absEtaIt),absEta_axis.at(absEtaIt+1));
+          std::string nPUAbsEtaString(nPUAbsEtaChar);
+          WriteNormalized( ((h_nPUDistr_vsNPUAbsEta[dataset])[region])[nPUAbsEtaString] );
+          WriteNormalized( ((h_recHitPedSubADC_vsNPUAbsEta[dataset])[region])[nPUAbsEtaString] );
+          WriteNormalized( ((h_recHitE_vsNPUAbsEta[dataset])[region])[nPUAbsEtaString] );
         }
             
       outFile -> cd("");
@@ -704,3 +929,5 @@ bool CheckSeedDistance(const int& recHit_ieta, const int& recHit_iphi,
   
   return farRecHit;
 }
+
+//  LocalWords:  for

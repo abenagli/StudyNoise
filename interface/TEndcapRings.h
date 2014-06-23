@@ -27,6 +27,12 @@
 #include <math.h>
 #include <vector>
 
+
+
+float GetEtaFromIRing(const int& iRing);
+
+
+
 class TEndcapRings
 {
  private:
