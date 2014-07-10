@@ -85,6 +85,7 @@ int main(int argc, char** argv)
   std::string absEtaAxisFile = gConfigParser -> readStringOption("Input::absEtaAxisFile");
   
   std::string label = gConfigParser -> readStringOption("Options::label");
+  std::string type = gConfigParser -> readStringOption("Options::type");
   int PUReweighting = gConfigParser -> readIntOption("Options::PUReweighting");
   
   std::string outputDir = gConfigParser -> readStringOption("Output::outputDir");
@@ -444,7 +445,7 @@ int main(int argc, char** argv)
     chain[dataset] -> SetBranchStatus("ele1_recHitMatrix_zside",1);    chain[dataset] -> SetBranchAddress("ele1_recHitMatrix_zside",    &ele1_recHit_iz);
     chain[dataset] -> SetBranchStatus("ele2_recHitMatrix_zside",1);    chain[dataset] -> SetBranchAddress("ele2_recHitMatrix_zside",    &ele2_recHit_iz);  
     
-    //if( dataset == "MC" )
+    if( (dataset == "MC" && type == "DAMC") || ( type == "MCMC"))
     {
       chain[dataset] -> SetBranchStatus("PUit_TrueNumInteractions",1); chain[dataset] -> SetBranchAddress("PUit_TrueNumInteractions",&nPU);
     }
@@ -461,13 +462,13 @@ int main(int argc, char** argv)
       
       
       // selections
-      //if( dataset == "DA" ) nPU = myAvgPUList -> GetAvgPU(runId,lumiId);
-      //if( dataset == "DA" && nPU == 0.) continue;
+      if(type == "DAMC" && dataset == "DA" ) nPU = myAvgPUList -> GetAvgPU(runId,lumiId); // da comentare per MC - MC
+      if(type == "DAMC" && dataset == "DA" && nPU == 0.) continue;                        // da comentare per MC - MC
       if( isZ == 0 ) continue;
-      //if( fabs(mee-91.18) > 3. ) continue;
+      if(type == "DAMC" && fabs(mee-91.18) > 3. ) continue;
       
       float PUWeight = 1.;
-      if( PUReweighting == 1 && dataset == "MC" ) PUWeight *= PUWeights[int(nPU+0.5)];
+      if(type == "DAMC" && PUReweighting == 1 && dataset == "MC" ) PUWeight *= PUWeights[int(nPU+0.5)];
       
       
       // fill ele1
@@ -500,8 +501,8 @@ int main(int argc, char** argv)
           
           bool farRecHit = CheckSeedDistance(recHit_ieta,recHit_iphi,ele1_seedIeta,ele1_seedIphi,ele1_seedIz);
           
-          if( ele1_recHit_flag->at(rhIt) != 3000 ) continue;
-          if( farRecHit != true )                  continue;
+	  if( ele1_recHit_flag->at(rhIt) != 3000 ) continue;
+	  if( farRecHit != true )                  continue;
           
           
           int nPUBin = (h_occupancy_vsNPU[dataset])[ele1_region] -> Fill(nPU);
