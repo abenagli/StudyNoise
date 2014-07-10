@@ -18,9 +18,14 @@
 #include "TLegend.h"
 
 
+//std::string label  = "Upgrade_NoAging_PU0-140";
+//std::string type = "MCMC";
 
-std::string label  = "Upgrade_NoAging_PU0-140";
+std::string label  = "runD_DA-MC";
+std::string type = "DAMC";
+
 std::string label2 = "MC-NuGun-runAB-noPU";
+
 
 int rebin = 120;
 
@@ -47,9 +52,16 @@ int main()
   gNuGun_recHitE_RMS_vsIRing -> SetLineColor(kBlue);
   gNuGun_recHitE_RMS_vsIRing -> SetLineWidth(2);
   
+  TFile* ax = TFile::Open("alexey.root","read");
+  TGraphErrors* ax_PU70 = (TGraphErrors*)ax->Get("g_70");
+  TGraphErrors* ax_PU140 = (TGraphErrors*)ax->Get("g_140");
+
   TFile* f  = TFile::Open((baseDir+"/output/studyNoise_" +label +".root").c_str(),"READ");
   f -> cd();
-  
+
+
+  std::string folderName = baseDir+"/output/noisePlots__" + label + "/";
+  system(("mkdir "+folderName).c_str());  
   
   TLegend* leg = NULL;
   
@@ -101,8 +113,17 @@ int main()
   TGraphErrors** g_recHitE_sigma_vsEta   = new TGraphErrors*[datasets.size()];
   TGraphErrors** g_recHitE_RMS_vsAbsEta   = new TGraphErrors*[datasets.size()];
   TGraphErrors** g_recHitE_sigma_vsAbsEta = new TGraphErrors*[datasets.size()];
+  TGraphErrors** g_recHitE_sigma_vsAbsEtans = new TGraphErrors*[datasets.size()];
+  TGraphErrors** g_recHitE_sigmaAt70PU_vsAbsEtans = new TGraphErrors*[datasets.size()];
+  TGraphErrors** g_recHitE_sigmaAt140PU_vsAbsEtans = new TGraphErrors*[datasets.size()];
+
   TGraphErrors** g_recHitE_RMSAt0PU_vsIRing   = new TGraphErrors*[datasets.size()];
   TGraphErrors** g_recHitE_sigmaAt0PU_vsIRing = new TGraphErrors*[datasets.size()];  
+
+  TGraphErrors** g_recHitE_RMSAt0PU_vsAbsEta   = new TGraphErrors*[datasets.size()];
+  TGraphErrors** g_recHitE_sigmaAt0PU_vsAbsEta = new TGraphErrors*[datasets.size()];  
+  TGraphErrors** g_recHitE_sigmaAt70PU_vsAbsEta = new TGraphErrors*[datasets.size()];  
+  TGraphErrors** g_recHitE_sigmaAt140PU_vsAbsEta = new TGraphErrors*[datasets.size()];  
 
   TGraphErrors** g_recHitE_RMS_vsEta_PU0       = new TGraphErrors*[datasets.size()];
   TGraphErrors** g_recHitE_RMS_vsEta_PU70      = new TGraphErrors*[datasets.size()];
@@ -110,6 +131,8 @@ int main()
   TGraphErrors** g_recHitE_RMS_vsAbsEta_PU0    = new TGraphErrors*[datasets.size()];
   TGraphErrors** g_recHitE_RMS_vsAbsEta_PU70   = new TGraphErrors*[datasets.size()];
   TGraphErrors** g_recHitE_RMS_vsAbsEta_PU140  = new TGraphErrors*[datasets.size()];
+  TGraphErrors** g_recHitE_RMS_vsAbsEta_PU70ns   = new TGraphErrors*[datasets.size()];
+  TGraphErrors** g_recHitE_RMS_vsAbsEta_PU140ns  = new TGraphErrors*[datasets.size()];
 
   TGraphErrors** g_recHitE_sigma_vsEta_PU0      = new TGraphErrors*[datasets.size()];
   TGraphErrors** g_recHitE_sigma_vsEta_PU70     = new TGraphErrors*[datasets.size()];
@@ -163,10 +186,19 @@ int main()
     g_recHitE_sigma_vsIRing[datasetIt] = new TGraphErrors();
     g_recHitE_RMSAt0PU_vsIRing[datasetIt]   = new TGraphErrors();
     g_recHitE_sigmaAt0PU_vsIRing[datasetIt] = new TGraphErrors();    
+
+    g_recHitE_RMSAt0PU_vsAbsEta[datasetIt]   = new TGraphErrors();
+    g_recHitE_sigmaAt0PU_vsAbsEta[datasetIt] = new TGraphErrors();    
+    g_recHitE_sigmaAt70PU_vsAbsEta[datasetIt] = new TGraphErrors();    
+    g_recHitE_sigmaAt140PU_vsAbsEta[datasetIt] = new TGraphErrors();    
+
     g_recHitE_RMS_vsEta[datasetIt]      = new TGraphErrors();
     g_recHitE_sigma_vsEta[datasetIt]    = new TGraphErrors();
     g_recHitE_RMS_vsAbsEta[datasetIt]   = new TGraphErrors();
     g_recHitE_sigma_vsAbsEta[datasetIt] = new TGraphErrors();
+    g_recHitE_sigma_vsAbsEtans[datasetIt] = new TGraphErrors();
+    g_recHitE_sigmaAt70PU_vsAbsEtans[datasetIt] = new TGraphErrors();
+    g_recHitE_sigmaAt140PU_vsAbsEtans[datasetIt] = new TGraphErrors();
 
     g_recHitE_RMS_vsEta_PU0[datasetIt]     = new TGraphErrors();
     g_recHitE_RMS_vsEta_PU70[datasetIt]    = new TGraphErrors();
@@ -174,6 +206,8 @@ int main()
     g_recHitE_RMS_vsAbsEta_PU0[datasetIt]     = new TGraphErrors();
     g_recHitE_RMS_vsAbsEta_PU70[datasetIt]    = new TGraphErrors();
     g_recHitE_RMS_vsAbsEta_PU140[datasetIt]   = new TGraphErrors();
+    g_recHitE_RMS_vsAbsEta_PU70ns[datasetIt]    = new TGraphErrors();
+    g_recHitE_RMS_vsAbsEta_PU140ns[datasetIt]   = new TGraphErrors();
 
     g_recHitE_sigma_vsEta_PU0[datasetIt]   = new TGraphErrors();
     g_recHitE_sigma_vsEta_PU70[datasetIt]  = new TGraphErrors();
@@ -217,21 +251,26 @@ int main()
         sprintf(histoName,"%s/%s/plots_vs_nPU/h_nPUDistr_nPU%2.1f-%2.1f_%s_%s",dataset.c_str(),region.c_str(),
                                                                                binLowEdge,binHigEdge,
                                                                                region.c_str(),dataset.c_str());
+
+	std::cout << "histoName = " << std::string(histoName) << std::endl;
         TH1F* histo = (TH1F*)( f->Get(histoName) );
         float binMean    = histo -> GetMean();
+        float binRMS     = histo -> GetRMS();
         float binMeanErr = histo -> GetMeanError();
-        //if( binMean < 6. || binMean > 30. ) continue;
+	std::cout << " nPU = " << binLowEdge << " " << binHigEdge << " binMean = " << binMean << " " << binRMS << " " << binMeanErr << std::endl;
+        if( type == "DAMC" && (binMean < 6. || binMean > 30.) ) continue;
         
         
         sprintf(histoName,"%s/%s/plots_vs_nPU/h_recHitE_nPU%2.1f-%2.1f_%s_%s",dataset.c_str(),region.c_str(),
                                                                               binLowEdge,binHigEdge,
                                                                               region.c_str(),dataset.c_str());
         histo = (TH1F*)( f->Get(histoName) );
+	std::cout << "histoName = " << std::string(histoName) << std::endl;
         if( histo->GetEntries() < 30 ) continue;
         histo -> Rebin(rebin);
         
 	// 	std::cout << " >>> binMean = " << binMean << std::endl;
-	if(binMean == 140) histo -> Rebin(2);
+	//	if(binMean == 140) histo -> Rebin(2);
         
         TF1* f_gaus;
         if( region == "EB" ) f_gaus = new TF1("f_gaus","[0]*exp(-1.*(x-[1])*(x-[1])/2/[2]/[2])",-0.10,0.10);
@@ -259,18 +298,30 @@ int main()
         if( region == "EB" )
         {
           gEB_recHitE_RMS_vsNPU[datasetIt] -> SetPoint(point,binMean,histo->GetRMS());
-          gEB_recHitE_RMS_vsNPU[datasetIt] -> SetPointError(point,binMeanErr,histo->GetRMSError());
+	  //         gEB_recHitE_RMS_vsNPU[datasetIt] -> SetPointError(point,binMeanErr,histo->GetRMSError());
+          gEB_recHitE_RMS_vsNPU[datasetIt] -> SetPointError(point,binRMS,histo->GetRMSError());
+	  //	  std::cout << " binMean = " << binMean << " " << histo->GetRMS() << " " << histo->GetRMSError() << std::endl;
           
-          gEB_recHitE_sigma_vsNPU[datasetIt] -> SetPoint(point,binMean,f_gaus->GetParameter(2));
-          gEB_recHitE_sigma_vsNPU[datasetIt] -> SetPointError(point,binMeanErr,f_gaus->GetParError(2));
+	  // 	  gEB_recHitE_sigma_vsNPU[datasetIt] -> SetPoint(point,binMean,histo->GetRMS());
+	  // 	  gEB_recHitE_sigma_vsNPU[datasetIt] -> SetPointError(point,binRMS,histo->GetRMSError());
+
+	  //          gEB_recHitE_sigma_vsNPU[datasetIt] -> SetPoint(point,binMean,f_gaus->GetParameter(2));
+	  //          gEB_recHitE_sigma_vsNPU[datasetIt] -> SetPointError(point,binMeanErr,f_gaus->GetParError(2));
+	  gEB_recHitE_sigma_vsNPU[datasetIt] -> SetPoint(point,binMean,GetEffectiveSigma(histo));
+	  //gEB_recHitE_sigma_vsNPU[datasetIt] -> SetPoint(point,binMean,histo->GetRMS());
+	  //std::cout << " GetEffectiveSigma(histo) = " << GetEffectiveSigma(histo) << std::endl;
+	  gEB_recHitE_sigma_vsNPU[datasetIt] -> SetPointError(point,binRMS,histo->GetRMSError());
         }
         if( region == "EE" )
         {
           gEE_recHitE_RMS_vsNPU[datasetIt] -> SetPoint(point,binMean,histo->GetRMS());
-          gEE_recHitE_RMS_vsNPU[datasetIt] -> SetPointError(point,binMeanErr,histo->GetRMSError());
+	  //          gEE_recHitE_RMS_vsNPU[datasetIt] -> SetPointError(point,binMeanErr,histo->GetRMSError());
+          gEE_recHitE_RMS_vsNPU[datasetIt] -> SetPointError(point,binRMS,histo->GetRMSError());
           
-          gEE_recHitE_sigma_vsNPU[datasetIt] -> SetPoint(point,binMean,f_gaus->GetParameter(2));
-          gEE_recHitE_sigma_vsNPU[datasetIt] -> SetPointError(point,binMeanErr,f_gaus->GetParError(2));
+	  //           gEE_recHitE_sigma_vsNPU[datasetIt] -> SetPoint(point,binMean,f_gaus->GetParameter(2));
+	  //           gEE_recHitE_sigma_vsNPU[datasetIt] -> SetPointError(point,binMeanErr,f_gaus->GetParError(2));
+          gEE_recHitE_sigma_vsNPU[datasetIt] -> SetPoint(point,binMean,GetEffectiveSigma(histo));
+          gEE_recHitE_sigma_vsNPU[datasetIt] -> SetPointError(point,binRMS,histo->GetRMSError());
         }
         delete f_gaus;
         ++point;
@@ -283,445 +334,22 @@ int main()
       delete c_temp2;
                   
       gEB_recHitE_RMS_vsNPU[datasetIt] -> SetPoint(gEB_recHitE_RMS_vsNPU[datasetIt]->GetN(),-1.,-1.);
-      gEB_recHitE_RMS_vsNPU[datasetIt] -> SetPoint(gEB_recHitE_RMS_vsNPU[datasetIt]->GetN(),100.,-1.);
+      gEB_recHitE_RMS_vsNPU[datasetIt] -> SetPoint(gEB_recHitE_RMS_vsNPU[datasetIt]->GetN(),200.,-1.);
       
-      gEB_recHitE_sigma_vsNPU[datasetIt] -> SetPoint(gEB_recHitE_RMS_vsNPU[datasetIt]->GetN(),-1.,-1.);
-      gEB_recHitE_sigma_vsNPU[datasetIt] -> SetPoint(gEB_recHitE_RMS_vsNPU[datasetIt]->GetN(),100.,-1.);
+      gEB_recHitE_sigma_vsNPU[datasetIt] -> SetPoint(gEB_recHitE_sigma_vsNPU[datasetIt]->GetN(),-1.,-1.);
+      gEB_recHitE_sigma_vsNPU[datasetIt] -> SetPoint(gEB_recHitE_sigma_vsNPU[datasetIt]->GetN(),200.,-1.);
       
       gEE_recHitE_RMS_vsNPU[datasetIt] -> SetPoint(gEE_recHitE_RMS_vsNPU[datasetIt]->GetN(),-1.,-1.);
-      gEE_recHitE_RMS_vsNPU[datasetIt] -> SetPoint(gEE_recHitE_RMS_vsNPU[datasetIt]->GetN(),100.,-1.);
+      gEE_recHitE_RMS_vsNPU[datasetIt] -> SetPoint(gEE_recHitE_RMS_vsNPU[datasetIt]->GetN(),200.,-1.);
       
-      gEE_recHitE_sigma_vsNPU[datasetIt] -> SetPoint(gEE_recHitE_RMS_vsNPU[datasetIt]->GetN(),-1.,-1.);
-      gEE_recHitE_sigma_vsNPU[datasetIt] -> SetPoint(gEE_recHitE_RMS_vsNPU[datasetIt]->GetN(),100.,-1.);
+      gEE_recHitE_sigma_vsNPU[datasetIt] -> SetPoint(gEE_recHitE_sigma_vsNPU[datasetIt]->GetN(),-1.,-1.);
+      gEE_recHitE_sigma_vsNPU[datasetIt] -> SetPoint(gEE_recHitE_sigma_vsNPU[datasetIt]->GetN(),200.,-1.);
     }
+  
+    //////////////////////////////
+   std::cout << " >>> h_occupancy_vsIRing iRing " << std::endl;
     
-
-    int point = 0;
-    for(int bin = 1; bin <= h_occupancy_vsIRing->GetNbinsX(); ++bin)
-    {  
-      float binCenter  = h_occupancy_vsIRing -> GetBinCenter(bin);
-      float binLowEdge = h_occupancy_vsIRing -> GetBinLowEdge(bin);
-      float binHigEdge = h_occupancy_vsIRing -> GetBinLowEdge(bin) + h_occupancy_vsIRing->GetBinWidth(bin);
-      
-      if( binCenter == 0 ) continue;
-    
-      
-      if( fabs(binCenter) < 86 )
-      {
-        char histoName[50];
-        sprintf(histoName,"%s/EB/plots_vs_iRing/h_recHitE_iRing%2.1f-%2.1f_EB_%s",dataset.c_str(),binLowEdge,binHigEdge,dataset.c_str());
-        TH1F* histo = (TH1F*)( f->Get(histoName) );
-        if( histo->GetEntries() < 30 ) continue;
-        histo -> Rebin(rebin);
-
-	//         TF1* f_gaus = new TF1("f_gaus","[0]*exp(-1.*(x-[1])*(x-[1])/2/[2]/[2])",-0.10,0.10);
-	//         f_gaus -> SetParameters(histo->GetMaximum(),0.,0.05);
-        
-        g_recHitE_RMS_vsIRing[datasetIt] -> SetPoint(point,binCenter,histo->GetRMS());
-        g_recHitE_RMS_vsIRing[datasetIt] -> SetPointError(point,0.,histo->GetRMSError());
-        
-	//         g_recHitE_sigma_vsIRing[datasetIt] -> SetPoint(point,binCenter,f_gaus->GetParameter(2));
-	//         g_recHitE_sigma_vsIRing[datasetIt] -> SetPointError(point,0.,f_gaus->GetParError(2));
-        g_recHitE_sigma_vsIRing[datasetIt] -> SetPoint(point,binCenter,GetEffectiveSigma(histo));
-        g_recHitE_sigma_vsIRing[datasetIt] -> SetPointError(point,0.,histo->GetBinWidth(1));
-
-	delete histo;
-
-	//PU0        
-sprintf(histoName,"%s/EB/plots_vs_nPU_and_iRing/h_recHitE_nPU-1.0-1.0__iRing%2.1f-%2.1f_EB_%s",dataset.c_str(),binLowEdge,binHigEdge,dataset.c_str());
-        histo = (TH1F*)( f->Get(histoName) );
-        histo -> Rebin(rebin);
-
-        g_recHitE_RMS_vsIRing_PU0[datasetIt] -> SetPoint(point,binCenter,histo->GetRMS());
-        g_recHitE_RMS_vsIRing_PU0[datasetIt] -> SetPointError(point,0.,histo->GetRMSError());
-	//        delete f_gaus;
-
-	delete histo;
-
-	//PU70        
-sprintf(histoName,"%s/EB/plots_vs_nPU_and_iRing/h_recHitE_nPU69.0-71.0__iRing%2.1f-%2.1f_EB_%s",dataset.c_str(),binLowEdge,binHigEdge,dataset.c_str());
-        histo = (TH1F*)( f->Get(histoName) );
-        histo -> Rebin(rebin);
-
-        g_recHitE_RMS_vsIRing_PU70[datasetIt] -> SetPoint(point,binCenter,histo->GetRMS());
-        g_recHitE_RMS_vsIRing_PU70[datasetIt] -> SetPointError(point,0.,histo->GetRMSError());
-	//        delete f_gaus;
-
-	delete histo;
-
-	//PU140        
-sprintf(histoName,"%s/EB/plots_vs_nPU_and_iRing/h_recHitE_nPU139.0-141.0__iRing%2.1f-%2.1f_EB_%s",dataset.c_str(),binLowEdge,binHigEdge,dataset.c_str());
-        histo = (TH1F*)( f->Get(histoName) );
-        histo -> Rebin(rebin);
-        histo -> Rebin(2);
-
-        g_recHitE_RMS_vsIRing_PU140[datasetIt] -> SetPoint(point,binCenter,histo->GetRMS());
-        g_recHitE_RMS_vsIRing_PU140[datasetIt] -> SetPointError(point,0.,histo->GetRMSError());
-	//        delete f_gaus;
-
-	delete histo;
-
-        ++point;
-      }
-      else
-      {
-        char histoName[50];
-        sprintf(histoName,"%s/EE/plots_vs_iRing/h_recHitE_iRing%2.1f-%2.1f_EE_%s",dataset.c_str(),binLowEdge,binHigEdge,dataset.c_str());
-        TH1F* histo = (TH1F*)( f->Get(histoName) );
-        if( histo->GetEntries() < 30 ) continue;
-        histo -> Rebin(rebin);
-        
-	//         TF1* f_gaus = new TF1("f_gaus","[0]*exp(-1.*(x-[1])*(x-[1])/2/[2]/[2])",-0.25,0.25);
-	//         f_gaus -> SetParameters(histo->GetMaximum(),0.,0.05);
-	//         histo -> Fit("f_gaus","QENRS");
-              
-        g_recHitE_RMS_vsIRing[datasetIt] -> SetPoint(point,binCenter,histo->GetRMS());
-        g_recHitE_RMS_vsIRing[datasetIt] -> SetPointError(point,0.,histo->GetRMSError());
-        
-	//         g_recHitE_sigma_vsIRing[datasetIt] -> SetPoint(point,binCenter,f_gaus->GetParameter(2));
-	//         g_recHitE_sigma_vsIRing[datasetIt] -> SetPointError(point,0.,f_gaus->GetParError(2));
-        g_recHitE_sigma_vsIRing[datasetIt] -> SetPoint(point,binCenter,GetEffectiveSigma(histo));
-	g_recHitE_sigma_vsIRing[datasetIt] -> SetPointError(point,0.,histo->GetBinWidth(1));
-        
-	//        delete f_gaus;
-	delete histo;
-
-	//PU0        
-sprintf(histoName,"%s/EE/plots_vs_nPU_and_iRing/h_recHitE_nPU-1.0-1.0__iRing%2.1f-%2.1f_EE_%s",dataset.c_str(),binLowEdge,binHigEdge,dataset.c_str());
-        histo = (TH1F*)( f->Get(histoName) );
-        histo -> Rebin(rebin);
-
-        g_recHitE_RMS_vsIRing_PU0[datasetIt] -> SetPoint(point,binCenter,histo->GetRMS());
-        g_recHitE_RMS_vsIRing_PU0[datasetIt] -> SetPointError(point,0.,histo->GetRMSError());
-	//        delete f_gaus;
-
-	delete histo;
-
-	//PU70        
-sprintf(histoName,"%s/EE/plots_vs_nPU_and_iRing/h_recHitE_nPU69.0-71.0__iRing%2.1f-%2.1f_EE_%s",dataset.c_str(),binLowEdge,binHigEdge,dataset.c_str());
-        histo = (TH1F*)( f->Get(histoName) );
-        histo -> Rebin(rebin);
-
-        g_recHitE_RMS_vsIRing_PU70[datasetIt] -> SetPoint(point,binCenter,histo->GetRMS());
-        g_recHitE_RMS_vsIRing_PU70[datasetIt] -> SetPointError(point,0.,histo->GetRMSError());
-	//        delete f_gaus;
-
-	delete histo;
-
-	//PU140        
-sprintf(histoName,"%s/EE/plots_vs_nPU_and_iRing/h_recHitE_nPU139.0-141.0__iRing%2.1f-%2.1f_EE_%s",dataset.c_str(),binLowEdge,binHigEdge,dataset.c_str());
-        histo = (TH1F*)( f->Get(histoName) );
-        histo -> Rebin(rebin);
-        histo -> Rebin(2);
-
-        g_recHitE_RMS_vsIRing_PU140[datasetIt] -> SetPoint(point,binCenter,histo->GetRMS());
-        g_recHitE_RMS_vsIRing_PU140[datasetIt] -> SetPointError(point,0.,histo->GetRMSError());
-	//        delete f_gaus;
-	std::cout << " iRing " << binLowEdge << " " << binHigEdge << "rms = " << histo->GetRMS() << std::endl;
-	delete histo;
-
-        ++point;      
-      }
-    }
-    
-
-    point = 0;
-    for(int bin = 1; bin <= h_occupancy_vsEta->GetNbinsX(); ++bin)
-    {  
-      float binCenter  = h_occupancy_vsEta -> GetBinCenter(bin);
-      float binLowEdge = h_occupancy_vsEta -> GetBinLowEdge(bin);
-      float binHigEdge = h_occupancy_vsEta -> GetBinLowEdge(bin) + h_occupancy_vsEta->GetBinWidth(bin);
-      
-      if( binCenter == 0 ) continue;
-      
-      if( fabs(binCenter) < 1.4442 )
-      {
-        char histoName[50];
-        sprintf(histoName,"%s/EB/plots_vs_eta/h_recHitE_eta%1.4f-%1.4f_EB_%s",dataset.c_str(),binLowEdge,binHigEdge,dataset.c_str());
-        TH1F* histo = (TH1F*)( f->Get(histoName) );
-        if( histo->GetEntries() < 30 ) continue;
-        histo -> Rebin(rebin);
-        
-        g_recHitE_RMS_vsEta[datasetIt] -> SetPoint(point,binCenter,histo->GetRMS());
-        g_recHitE_RMS_vsEta[datasetIt] -> SetPointError(point,0.,histo->GetRMSError());
-        
-        g_recHitE_sigma_vsEta[datasetIt] -> SetPoint(point,binCenter,GetEffectiveSigma(histo));
-	g_recHitE_sigma_vsEta[datasetIt] -> SetPointError(point,0.,histo->GetBinWidth(1));
-        
-	delete histo;
-
-	//PU0
-        sprintf(histoName,"%s/EB/plots_vs_nPU_and_eta/h_recHitE_nPU-1.0-1.0__eta%1.4f-%1.4f_EB_%s",dataset.c_str(),binLowEdge,binHigEdge,dataset.c_str());
-        histo = (TH1F*)( f->Get(histoName) );
-	//        if( histo->GetEntries() < 30 ) continue;
-        histo -> Rebin(rebin);
-        
-        g_recHitE_RMS_vsEta_PU0[datasetIt] -> SetPoint(point,binCenter,histo->GetRMS());
-        g_recHitE_RMS_vsEta_PU0[datasetIt] -> SetPointError(point,0.,histo->GetRMSError());
-        
-        g_recHitE_sigma_vsEta_PU0[datasetIt] -> SetPoint(point,binCenter,GetEffectiveSigma(histo));
-	g_recHitE_sigma_vsEta_PU0[datasetIt] -> SetPointError(point,0., histo->GetBinWidth(1));
-        
-	delete histo;
-
-	//PU70
-        sprintf(histoName,"%s/EB/plots_vs_nPU_and_eta/h_recHitE_nPU69.0-71.0__eta%1.4f-%1.4f_EB_%s",dataset.c_str(),binLowEdge,binHigEdge,dataset.c_str());
-        histo = (TH1F*)( f->Get(histoName) );
-	//        if( histo->GetEntries() < 30 ) continue;
-        histo -> Rebin(rebin);
-        
-        g_recHitE_RMS_vsEta_PU70[datasetIt] -> SetPoint(point,binCenter,histo->GetRMS());
-        g_recHitE_RMS_vsEta_PU70[datasetIt] -> SetPointError(point,0.,histo->GetRMSError());
-        
-        g_recHitE_sigma_vsEta_PU70[datasetIt] -> SetPoint(point,binCenter,GetEffectiveSigma(histo));
-        g_recHitE_sigma_vsEta_PU70[datasetIt] -> SetPointError(point,0., histo->GetBinWidth(1));
-        
-	delete histo;
-
-	//PU140
-    sprintf(histoName,"%s/EB/plots_vs_nPU_and_eta/h_recHitE_nPU139.0-141.0__eta%1.4f-%1.4f_EB_%s",dataset.c_str(),binLowEdge,binHigEdge,dataset.c_str());
-        histo = (TH1F*)( f->Get(histoName) );
-	//        if( histo->GetEntries() < 30 ) continue;
-        histo -> Rebin(rebin);
-	histo -> Rebin(2);
-
-        g_recHitE_RMS_vsEta_PU140[datasetIt] -> SetPoint(point,binCenter,histo->GetRMS());
-        g_recHitE_RMS_vsEta_PU140[datasetIt] -> SetPointError(point,0.,histo->GetRMSError());
-        
-        g_recHitE_sigma_vsEta_PU140[datasetIt] -> SetPoint(point,binCenter,GetEffectiveSigma(histo));
-	g_recHitE_sigma_vsEta_PU140[datasetIt] -> SetPointError(point,0.,histo->GetBinWidth(1));
-        
-	delete histo;
-	
-        ++point;
-      }
-      else
-      {
-        char histoName[50];
-        sprintf(histoName,"%s/EE/plots_vs_eta/h_recHitE_eta%1.4f-%1.4f_EE_%s",dataset.c_str(),binLowEdge,binHigEdge,dataset.c_str());
-        TH1F* histo = (TH1F*)( f->Get(histoName) );
-        if( histo->GetEntries() < 30 ) continue;
-        histo -> Rebin(rebin);
-        
-        g_recHitE_RMS_vsEta[datasetIt] -> SetPoint(point,binCenter,histo->GetRMS());
-        g_recHitE_RMS_vsEta[datasetIt] -> SetPointError(point,0.,histo->GetRMSError());
-        
-        g_recHitE_sigma_vsEta[datasetIt] -> SetPoint(point,binCenter,GetEffectiveSigma(histo));
-        g_recHitE_sigma_vsEta[datasetIt] -> SetPointError(point,0.,histo->GetBinWidth(1));
-        
-	delete histo;
-
-	//PU0
-        sprintf(histoName,"%s/EE/plots_vs_nPU_and_eta/h_recHitE_nPU-1.0-1.0__eta%1.4f-%1.4f_EE_%s",dataset.c_str(),binLowEdge,binHigEdge,dataset.c_str());
-        histo = (TH1F*)( f->Get(histoName) );
-	//        if( histo->GetEntries() < 30 ) continue;
-        histo -> Rebin(rebin);
-        
-        g_recHitE_RMS_vsEta_PU0[datasetIt] -> SetPoint(point,binCenter,histo->GetRMS());
-        g_recHitE_RMS_vsEta_PU0[datasetIt] -> SetPointError(point,0.,histo->GetRMSError());
-        
-        g_recHitE_sigma_vsEta_PU0[datasetIt] -> SetPoint(point,binCenter,GetEffectiveSigma(histo));
-	g_recHitE_sigma_vsEta_PU0[datasetIt] -> SetPointError(point,0.,histo->GetBinWidth(1));
-        
-	delete histo;
-
-	//PU70
-        sprintf(histoName,"%s/EE/plots_vs_nPU_and_eta/h_recHitE_nPU69.0-71.0__eta%1.4f-%1.4f_EE_%s",dataset.c_str(),binLowEdge,binHigEdge,dataset.c_str());
-        histo = (TH1F*)( f->Get(histoName) );
-	//        if( histo->GetEntries() < 30 ) continue;
-        histo -> Rebin(rebin);
-        
-        g_recHitE_RMS_vsEta_PU70[datasetIt] -> SetPoint(point,binCenter,histo->GetRMS());
-        g_recHitE_RMS_vsEta_PU70[datasetIt] -> SetPointError(point,0.,histo->GetRMSError());
-        
-        g_recHitE_sigma_vsEta_PU70[datasetIt] -> SetPoint(point,binCenter,GetEffectiveSigma(histo));
-	g_recHitE_sigma_vsEta_PU70[datasetIt] -> SetPointError(point,0.,histo->GetBinWidth(1));
-        
-	delete histo;
-
-	//PU140
-    sprintf(histoName,"%s/EE/plots_vs_nPU_and_eta/h_recHitE_nPU139.0-141.0__eta%1.4f-%1.4f_EE_%s",dataset.c_str(),binLowEdge,binHigEdge,dataset.c_str());
-        histo = (TH1F*)( f->Get(histoName) );
-	//        if( histo->GetEntries() < 30 ) continue;
-        histo -> Rebin(rebin);
-        histo -> Rebin(2);
-
-        g_recHitE_RMS_vsEta_PU140[datasetIt] -> SetPoint(point,binCenter,histo->GetRMS());
-        g_recHitE_RMS_vsEta_PU140[datasetIt] -> SetPointError(point,0.,histo->GetRMSError());
-        
-        g_recHitE_sigma_vsEta_PU140[datasetIt] -> SetPoint(point,binCenter,GetEffectiveSigma(histo));
-	g_recHitE_sigma_vsEta_PU140[datasetIt] -> SetPointError(point,0.,histo->GetBinWidth(1));
-
-	delete histo;
-
-        ++point;      
-      }
-    }
-
-
-    point = 0;
-    for(int bin = 1; bin <= h_occupancy_vsAbsEta->GetNbinsX(); ++bin)
-    {  
-      float binCenter  = h_occupancy_vsAbsEta -> GetBinCenter(bin);
-      float binLowEdge = h_occupancy_vsAbsEta -> GetBinLowEdge(bin);
-      float binHigEdge = h_occupancy_vsAbsEta -> GetBinLowEdge(bin) + h_occupancy_vsAbsEta->GetBinWidth(bin);
-      
-      if( binCenter == 0 ) continue;
-      
-      if( fabs(binCenter) < 1.4442 )
-      {
-        char histoName[50];
-        sprintf(histoName,"%s/EB/plots_vs_absEta/h_recHitE_absEta%1.4f-%1.4f_EB_%s",dataset.c_str(),binLowEdge,binHigEdge,dataset.c_str());
-        TH1F* histo = (TH1F*)( f->Get(histoName) );
-        if( histo->GetEntries() < 30 ) continue;
-        histo -> Rebin(rebin);
-        
-        g_recHitE_RMS_vsAbsEta[datasetIt] -> SetPoint(point,binCenter,histo->GetRMS());
-        g_recHitE_RMS_vsAbsEta[datasetIt] -> SetPointError(point,0.,histo->GetRMSError());
-        
-        g_recHitE_sigma_vsAbsEta[datasetIt] -> SetPoint(point,binCenter, GetEffectiveSigma(histo));
-        g_recHitE_sigma_vsAbsEta[datasetIt] -> SetPointError(point,0.,histo->GetBinWidth(1));
-        
-	delete histo;
-
-	//PU0
-  sprintf(histoName,"%s/EB/plots_vs_nPU_and_absEta/h_recHitE_nPU-1.0-1.0__absEta%1.4f-%1.4f_EB_%s",dataset.c_str(),binLowEdge,binHigEdge,dataset.c_str());
-        histo = (TH1F*)( f->Get(histoName) );
-	//        if( histo->GetEntries() < 30 ) continue;
-        histo -> Rebin(rebin);
-        
-        g_recHitE_RMS_vsAbsEta_PU0[datasetIt] -> SetPoint(point,binCenter,histo->GetRMS());
-        g_recHitE_RMS_vsAbsEta_PU0[datasetIt] -> SetPointError(point,0.,histo->GetRMSError());
-        
-	float PU0contrib = GetEffectiveSigma(histo);
-	float PU0contrib2 = pow(PU0contrib,2);
-        g_recHitE_sigma_vsAbsEta_PU0[datasetIt]->SetPoint(point,binCenter,PU0contrib);
-        g_recHitE_sigma_vsAbsEta_PU0[datasetIt]->SetPointError(point,0.,histo->GetBinWidth(1));
-        
-	delete histo;
-
-	//PU70
-  sprintf(histoName,"%s/EB/plots_vs_nPU_and_absEta/h_recHitE_nPU69.0-71.0__absEta%1.4f-%1.4f_EB_%s",dataset.c_str(),binLowEdge,binHigEdge,dataset.c_str());
-        histo = (TH1F*)( f->Get(histoName) );
-	//        if( histo->GetEntries() < 30 ) continue;
-        histo -> Rebin(rebin);
-        
-        g_recHitE_RMS_vsAbsEta_PU70[datasetIt] -> SetPoint(point,binCenter,histo->GetRMS());
-        g_recHitE_RMS_vsAbsEta_PU70[datasetIt] -> SetPointError(point,0.,histo->GetRMSError());
-        
-	float PU70contrib = GetEffectiveSigma(histo);
-	float PU70contrib2 = pow(PU70contrib,2);
-        g_recHitE_sigma_vsAbsEta_PU70[datasetIt] -> SetPoint(point,binCenter,PU70contrib);
-	g_recHitE_sigma_vsAbsEta_PU70[datasetIt] -> SetPointError(point,0.,histo->GetBinWidth(1));
-        g_recHitE_sigma_vsAbsEta_PU70ns[datasetIt]->SetPoint(point,binCenter,sqrt(PU70contrib2 - PU0contrib2));
-	g_recHitE_sigma_vsAbsEta_PU70ns[datasetIt]->SetPointError(point,0.,
-								  histo->GetBinWidth(1)*sqrt((PU70contrib2 + PU0contrib2)/(PU70contrib2 - PU0contrib2)));
-	
-	delete histo;
-
-	//PU140
-sprintf(histoName,"%s/EB/plots_vs_nPU_and_absEta/h_recHitE_nPU139.0-141.0__absEta%1.4f-%1.4f_EB_%s",dataset.c_str(),binLowEdge,binHigEdge,dataset.c_str());
-        histo = (TH1F*)( f->Get(histoName) );
-	//        if( histo->GetEntries() < 30 ) continue;
-        histo -> Rebin(rebin);
-        histo -> Rebin(2);
-
-        g_recHitE_RMS_vsAbsEta_PU140[datasetIt] -> SetPoint(point,binCenter,histo->GetRMS());
-	g_recHitE_RMS_vsAbsEta_PU140[datasetIt] -> SetPointError(point,0.,histo->GetRMSError());
-        
-	float PU140contrib = GetEffectiveSigma(histo);
-	float PU140contrib2 = pow(PU140contrib,2);
-
-        g_recHitE_sigma_vsAbsEta_PU140[datasetIt] -> SetPoint(point,binCenter,PU140contrib);
-        g_recHitE_sigma_vsAbsEta_PU140[datasetIt] -> SetPointError(point,0.,histo->GetBinWidth(1));
-        g_recHitE_sigma_vsAbsEta_PU140ns[datasetIt]->SetPoint(point,binCenter,sqrt(PU140contrib2 - PU0contrib2));
-        g_recHitE_sigma_vsAbsEta_PU140ns[datasetIt]->SetPointError(point,0.,
-						    	   histo->GetBinWidth(1)*sqrt((PU140contrib2 + PU0contrib2)/(PU140contrib2 - PU0contrib2)));
-        
-	delete histo;
-
-        ++point;
-      }
-      else
-      {
-        char histoName[50];
-        sprintf(histoName,"%s/EE/plots_vs_absEta/h_recHitE_absEta%1.4f-%1.4f_EE_%s",dataset.c_str(),binLowEdge,binHigEdge,dataset.c_str());
-        TH1F* histo = (TH1F*)( f->Get(histoName) );
-	if( histo->GetEntries() < 30 ) continue;
-        histo -> Rebin(rebin);
-        
-              
-        g_recHitE_RMS_vsAbsEta[datasetIt] -> SetPoint(point,binCenter,histo->GetRMS());
-        g_recHitE_RMS_vsAbsEta[datasetIt] -> SetPointError(point,0.,histo->GetRMSError());
-        
-        g_recHitE_sigma_vsAbsEta[datasetIt] -> SetPoint(point,binCenter,GetEffectiveSigma(histo));
-	g_recHitE_sigma_vsAbsEta[datasetIt] -> SetPointError(point,0.,histo->GetBinWidth(1));
-        
-	delete histo;
-
-	//PU0
-  sprintf(histoName,"%s/EE/plots_vs_nPU_and_absEta/h_recHitE_nPU-1.0-1.0__absEta%1.4f-%1.4f_EE_%s",dataset.c_str(),binLowEdge,binHigEdge,dataset.c_str());
-        histo = (TH1F*)( f->Get(histoName) );
-        //if( histo->GetEntries() < 30 ) continue;
-        histo -> Rebin(rebin);
-        
-        g_recHitE_RMS_vsAbsEta_PU0[datasetIt] -> SetPoint(point,binCenter,histo->GetRMS());
-        g_recHitE_RMS_vsAbsEta_PU0[datasetIt] -> SetPointError(point,0.,histo->GetRMSError());
-        
-	float PU0contrib = GetEffectiveSigma(histo);
-        float PU0contrib2 = pow(PU0contrib,2);
-
-        g_recHitE_sigma_vsAbsEta_PU0[datasetIt] -> SetPoint(point,binCenter,PU0contrib);
-        g_recHitE_sigma_vsAbsEta_PU0[datasetIt] -> SetPointError(point,0.,histo->GetBinWidth(1));
-        
-	delete histo;
-
-	//PU70
-  sprintf(histoName,"%s/EE/plots_vs_nPU_and_absEta/h_recHitE_nPU69.0-71.0__absEta%1.4f-%1.4f_EE_%s",dataset.c_str(),binLowEdge,binHigEdge,dataset.c_str());
-        histo = (TH1F*)( f->Get(histoName) );
-        //if( histo->GetEntries() < 30 ) continue;
-        histo -> Rebin(rebin);
-        
-        
-        g_recHitE_RMS_vsAbsEta_PU70[datasetIt] -> SetPoint(point,binCenter,histo->GetRMS());
-        g_recHitE_RMS_vsAbsEta_PU70[datasetIt] -> SetPointError(point,0.,histo->GetRMSError());
-        
-	float PU70contrib = GetEffectiveSigma(histo);
-	float PU70contrib2 = pow(PU70contrib,2);
-        g_recHitE_sigma_vsAbsEta_PU70[datasetIt] -> SetPoint(point,binCenter,GetEffectiveSigma(histo));
-        g_recHitE_sigma_vsAbsEta_PU70[datasetIt] -> SetPointError(point,0.,histo->GetBinWidth(1));
-        g_recHitE_sigma_vsAbsEta_PU70ns[datasetIt]->SetPoint(point,binCenter,sqrt(PU70contrib2 - PU0contrib2));
-        g_recHitE_sigma_vsAbsEta_PU70ns[datasetIt]->SetPointError(point,0.,
-						    	   histo->GetBinWidth(1)*sqrt((PU70contrib2 + PU0contrib2)/(PU70contrib2 - PU0contrib2)));
-        
-	delete histo;
-
-	//PU140
-sprintf(histoName,"%s/EE/plots_vs_nPU_and_absEta/h_recHitE_nPU139.0-141.0__absEta%1.4f-%1.4f_EE_%s",dataset.c_str(),binLowEdge,binHigEdge,dataset.c_str());
-        histo = (TH1F*)( f->Get(histoName) );
-        //if( histo->GetEntries() < 30 ) continue;
-        histo -> Rebin(rebin);
-        histo -> Rebin(2);
-
-        g_recHitE_RMS_vsAbsEta_PU140[datasetIt] -> SetPoint(point,binCenter,histo->GetRMS());
-        g_recHitE_RMS_vsAbsEta_PU140[datasetIt] -> SetPointError(point,0.,histo->GetRMSError());
-
-	float PU140contrib = GetEffectiveSigma(histo);
-	float PU140contrib2 = pow(PU140contrib,2);        
-        g_recHitE_sigma_vsAbsEta_PU140[datasetIt] -> SetPoint(point,binCenter,GetEffectiveSigma(histo));
-        g_recHitE_sigma_vsAbsEta_PU140[datasetIt] -> SetPointError(point,0.,histo->GetBinWidth(1));
-        g_recHitE_sigma_vsAbsEta_PU140ns[datasetIt]->SetPoint(point,binCenter,sqrt(PU140contrib2 - PU0contrib2));
-        g_recHitE_sigma_vsAbsEta_PU140ns[datasetIt]->SetPointError(point,0.,
-						    	   histo->GetBinWidth(1)*sqrt((PU140contrib2 + PU0contrib2)/(PU140contrib2 - PU0contrib2)));
-        
-	delete histo;
-
-        ++point;      
-      }
-    }
-
-    
-    point = 0;
+   int  point = 0;
     for(int iRingBin = 1; iRingBin <= h_occupancy_vsIRing->GetNbinsX(); ++iRingBin)
     {  
       float iRingBinCenter  = h_occupancy_vsIRing -> GetBinCenter(iRingBin);
@@ -768,7 +396,7 @@ sprintf(histoName,"%s/EE/plots_vs_nPU_and_absEta/h_recHitE_nPU139.0-141.0__absEt
                                                                                                             dataset.c_str());        
         histo = (TH1F*)( f->Get(histoName) );
         if( histo->GetEntries() < 30 ) continue;
-        histo -> Rebin(rebin);
+	histo -> Rebin(rebin);
         
         g_temp -> SetPoint(point2,binMean,histo->GetRMS());
         g_temp -> SetPointError(point2,binMeanErr,histo->GetRMSError());
@@ -785,14 +413,716 @@ sprintf(histoName,"%s/EE/plots_vs_nPU_and_absEta/h_recHitE_nPU139.0-141.0__absEt
       delete g_temp;
       ++point;
     }
+  
+
+  ///////
+    std::cout << " >>> h_occupancy_vsAbsEta absEta " << std::endl;
+    
+    char cName[250];
+    sprintf(cName,"c_recHitE_sigma_vsNPU_%s",dataset.c_str());
+    TCanvas* c_t1 = new TCanvas(cName,cName);
+
+    char fName[250];
+    sprintf(fName,"%s/output/noisePlots__%s/recHitE_sigma_vsNPU_%s.pdf",baseDir.c_str(),label.c_str(),dataset.c_str());
+    std::string fNameString1(fName);
+    c_t1 -> Print((fNameString1+"[").c_str(),"pdf");
+
+
+    point = 0;
+    for(int iRingBin = 1; iRingBin <= h_occupancy_vsAbsEta->GetNbinsX(); ++iRingBin)
+    {  
+      float iRingBinCenter  = h_occupancy_vsAbsEta -> GetBinCenter(iRingBin);
+      float iRingBinLowEdge = h_occupancy_vsAbsEta -> GetBinLowEdge(iRingBin);
+      float iRingBinHigEdge = h_occupancy_vsAbsEta -> GetBinLowEdge(iRingBin) + h_occupancy_vsAbsEta->GetBinWidth(iRingBin);
+      
+      if( iRingBinCenter == 0 ) continue;
+      
+            
+      TGraphErrors* g_temp = new TGraphErrors();
+      int point2 = 0;
+      for(int nPUBin = 1; nPUBin <= h_occupancy_vsNPU->GetNbinsX(); ++nPUBin)
+      {
+        float nPUBinLowEdge = h_occupancy_vsNPU -> GetBinLowEdge(nPUBin);
+        float nPUBinHigEdge = h_occupancy_vsNPU -> GetBinLowEdge(nPUBin) + h_occupancy_vsNPU->GetBinWidth(nPUBin);      
+        
+// 	std::cout << " >>> point = " << point << std::endl;
+// 	std::cout << " >>> point2 = " << point2 << std::endl;
+
+        TH1F* histo;
+        char histoName[250];
+        
+        if( fabs(iRingBinCenter) < 1.4442 )
+          sprintf(histoName,"%s/EB/plots_vs_nPU_and_absEta/h_nPUDistr_nPU%2.1f-%2.1f__absEta%1.4f-%1.4f_EB_%s",dataset.c_str(),
+                                                                                                             nPUBinLowEdge,nPUBinHigEdge,
+                                                                                                             iRingBinLowEdge,iRingBinHigEdge,
+                                                                                                             dataset.c_str());        
+        else
+          sprintf(histoName,"%s/EE/plots_vs_nPU_and_absEta/h_nPUDistr_nPU%2.1f-%2.1f__absEta%1.4f-%1.4f_EE_%s",dataset.c_str(),
+                                                                                                             nPUBinLowEdge,nPUBinHigEdge,
+                                                                                                             iRingBinLowEdge,iRingBinHigEdge,
+                                                                                                             dataset.c_str());
+        histo = (TH1F*)( f->Get(histoName) );
+        float binMean    = histo -> GetMean();
+        float binMeanErr = histo -> GetMeanError();
+        if(type == "DAMC" &&  (binMean < 6. || binMean > 30.) ) continue;        
+        
+        if( fabs(iRingBinCenter) < 1.4442 )
+          sprintf(histoName,"%s/EB/plots_vs_nPU_and_absEta/h_recHitE_nPU%2.1f-%2.1f__absEta%1.4f-%1.4f_EB_%s",dataset.c_str(),
+                                                                                                            nPUBinLowEdge,nPUBinHigEdge,
+                                                                                                            iRingBinLowEdge,iRingBinHigEdge,
+                                                                                                            dataset.c_str());        
+        else
+          sprintf(histoName,"%s/EE/plots_vs_nPU_and_absEta/h_recHitE_nPU%2.1f-%2.1f__absEta%1.4f-%1.4f_EE_%s",dataset.c_str(),
+                                                                                                            nPUBinLowEdge,nPUBinHigEdge,
+                                                                                                            iRingBinLowEdge,iRingBinHigEdge,
+                                                                                                            dataset.c_str());        
+        histo = (TH1F*)( f->Get(histoName) );
+        if( histo->GetEntries() < 30 ) continue;
+	histo -> Rebin(rebin);
+        
+        g_temp -> SetPoint(point2,binMean,GetEffectiveSigma(histo));
+        g_temp -> SetPointError(point2,binMeanErr,histo->GetRMSError());
+        ++point2;
+      }
+      
+      TF1* f_temp = new TF1("f_temp","[0]+[1]*x",-0.5,199.5);
+      g_temp -> Fit("f_temp","QNRS");
+
+
+      sprintf(cName,"c_sigma_vsPU_absEta%1.4f-%1.4f_%s",iRingBinLowEdge, iRingBinHigEdge, dataset.c_str());
+      TCanvas* c_temp = new TCanvas(cName,cName);
+      c_temp->SetGridx();
+      c_temp->SetGridy();
+      g_temp->Draw("ap");
+      f_temp->Draw("same");
+      if(type == "DAMC") g_temp->GetXaxis()->SetRangeUser(0., 50.);
+      else g_temp->GetXaxis()->SetRangeUser(0., 190.);
+      g_temp->SetMaximum(0.5);
+      g_temp->SetMinimum(0.);
+      g_temp->GetXaxis()->SetTitle(Form("|#eta| %1.4f-%1.4f", iRingBinLowEdge, iRingBinHigEdge));
+
+      double y0 = f_temp->GetParameter(0);
+      double y0E = f_temp->GetParError(0);
+      double m = f_temp->GetParameter(1);
+      double mE = f_temp->GetParError(1);
+      ///////////
+      TPaveText* text = new TPaveText(0.20,0.85,0.50,0.90,"brNDC");
+      text -> SetTextSize(0.04);
+      text -> SetLineWidth(0);
+      text -> SetLineColor(kWhite);
+      text -> SetTextFont(42);
+      text -> SetTextColor(kBlack);
+      text -> SetFillColor(kWhite);
+      text -> SetFillStyle(1001);
+      text -> SetBorderSize(1);
+      char par0Text[50]; sprintf(par0Text,"y_{0} = %1.2e #pm %1.0e",y0, y0E);
+      text -> AddText(par0Text);
+      text -> Draw("same");
+
+      text = new TPaveText(0.50,0.85,0.80,0.90,"brNDC");
+      text -> SetTextSize(0.04);
+      text -> SetLineWidth(0);
+      text -> SetLineColor(kWhite);
+      text -> SetTextFont(42);
+      text -> SetTextColor(kBlack);
+      text -> SetFillColor(kWhite);
+      text -> SetFillStyle(1001);
+      text -> SetBorderSize(1);
+      char par1Text[50]; sprintf(par1Text,"m = %1.2e #pm %1.0e",m, mE);
+      text -> AddText(par1Text);
+      text -> Draw("same");
+      ///////////
+
+      c_temp -> Print(fNameString1.c_str(),"pdf");
+      delete c_temp;
+
+
+      g_recHitE_sigmaAt0PU_vsAbsEta[datasetIt] -> SetPoint(point,iRingBinCenter,y0);
+      g_recHitE_sigmaAt0PU_vsAbsEta[datasetIt] -> SetPointError(point,0.,y0E);
+
+      g_recHitE_sigmaAt70PU_vsAbsEta[datasetIt] -> SetPoint(point,iRingBinCenter,70.*m + y0);
+      g_recHitE_sigmaAt70PU_vsAbsEta[datasetIt] -> SetPointError(point,0.,70*mE + y0E);
+
+      g_recHitE_sigmaAt140PU_vsAbsEta[datasetIt] -> SetPoint(point,iRingBinCenter,140.*m + y0);
+      g_recHitE_sigmaAt140PU_vsAbsEta[datasetIt] -> SetPointError(point,0.,140*mE + y0E);
+      
+      delete f_temp;
+      delete g_temp;
+      ++point;
+    }
+    c_t1 -> Print((fNameString1+"]").c_str(),"pdf");
+    delete c_t1;
+ 
+    //////////////////////////////
+    std::cout << " >>> h_occupancy_vsIRing bin " << std::endl;
+
+    point = 0;
+    for(int bin = 1; bin <= h_occupancy_vsIRing->GetNbinsX(); ++bin)
+    {  
+      float binCenter  = h_occupancy_vsIRing -> GetBinCenter(bin);
+      float binLowEdge = h_occupancy_vsIRing -> GetBinLowEdge(bin);
+      float binHigEdge = h_occupancy_vsIRing -> GetBinLowEdge(bin) + h_occupancy_vsIRing->GetBinWidth(bin);
+      
+      if( binCenter == 0 ) continue;
+    
+      
+      if( fabs(binCenter) < 86 )
+      {
+        char histoName[50];
+        sprintf(histoName,"%s/EB/plots_vs_iRing/h_recHitE_iRing%2.1f-%2.1f_EB_%s",dataset.c_str(),binLowEdge,binHigEdge,dataset.c_str());
+        TH1F* histo = (TH1F*)( f->Get(histoName) );
+        if( histo->GetEntries() < 30 ) continue;
+	histo -> Rebin(rebin);
+
+	//         TF1* f_gaus = new TF1("f_gaus","[0]*exp(-1.*(x-[1])*(x-[1])/2/[2]/[2])",-0.10,0.10);
+	//         f_gaus -> SetParameters(histo->GetMaximum(),0.,0.05);
+        
+        g_recHitE_RMS_vsIRing[datasetIt] -> SetPoint(point,binCenter,histo->GetRMS());
+        g_recHitE_RMS_vsIRing[datasetIt] -> SetPointError(point,0.,histo->GetRMSError());
+        
+	//         g_recHitE_sigma_vsIRing[datasetIt] -> SetPoint(point,binCenter,f_gaus->GetParameter(2));
+	//         g_recHitE_sigma_vsIRing[datasetIt] -> SetPointError(point,0.,f_gaus->GetParError(2));
+        g_recHitE_sigma_vsIRing[datasetIt] -> SetPoint(point,binCenter,GetEffectiveSigma(histo));
+        g_recHitE_sigma_vsIRing[datasetIt] -> SetPointError(point,0.,histo->GetRMSError());
+
+	delete histo;
+
+	if(type == "MCMC"){
+	//PU0        
+sprintf(histoName,"%s/EB/plots_vs_nPU_and_iRing/h_recHitE_nPU-1.0-1.0__iRing%2.1f-%2.1f_EB_%s",dataset.c_str(),binLowEdge,binHigEdge,dataset.c_str());
+        histo = (TH1F*)( f->Get(histoName) );
+	//	histo -> Rebin(rebin);
+
+        g_recHitE_RMS_vsIRing_PU0[datasetIt] -> SetPoint(point,binCenter,histo->GetRMS());
+        g_recHitE_RMS_vsIRing_PU0[datasetIt] -> SetPointError(point,0.,histo->GetRMSError());
+	//        delete f_gaus;
+
+	delete histo;
+
+	//PU70        
+sprintf(histoName,"%s/EB/plots_vs_nPU_and_iRing/h_recHitE_nPU69.0-71.0__iRing%2.1f-%2.1f_EB_%s",dataset.c_str(),binLowEdge,binHigEdge,dataset.c_str());
+        histo = (TH1F*)( f->Get(histoName) );
+	//	histo -> Rebin(rebin);
+
+        g_recHitE_RMS_vsIRing_PU70[datasetIt] -> SetPoint(point,binCenter,histo->GetRMS());
+        g_recHitE_RMS_vsIRing_PU70[datasetIt] -> SetPointError(point,0.,histo->GetRMSError());
+	//	delete f_gaus;
+
+	delete histo;
+
+	//PU140        
+sprintf(histoName,"%s/EB/plots_vs_nPU_and_iRing/h_recHitE_nPU139.0-141.0__iRing%2.1f-%2.1f_EB_%s",dataset.c_str(),binLowEdge,binHigEdge,dataset.c_str());
+        histo = (TH1F*)( f->Get(histoName) );
+// 	histo -> Rebin(rebin);
+// 	histo -> Rebin(2);
+
+        g_recHitE_RMS_vsIRing_PU140[datasetIt] -> SetPoint(point,binCenter,histo->GetRMS());
+        g_recHitE_RMS_vsIRing_PU140[datasetIt] -> SetPointError(point,0.,histo->GetRMSError());
+	//        delete f_gaus;
+
+	delete histo;
+	}
+        ++point;
+      }
+      else
+      {
+        char histoName[50];
+        sprintf(histoName,"%s/EE/plots_vs_iRing/h_recHitE_iRing%2.1f-%2.1f_EE_%s",dataset.c_str(),binLowEdge,binHigEdge,dataset.c_str());
+        TH1F* histo = (TH1F*)( f->Get(histoName) );
+        if( histo->GetEntries() < 30 ) continue;
+        histo -> Rebin(rebin);
+        
+	//         TF1* f_gaus = new TF1("f_gaus","[0]*exp(-1.*(x-[1])*(x-[1])/2/[2]/[2])",-0.25,0.25);
+	//         f_gaus -> SetParameters(histo->GetMaximum(),0.,0.05);
+	//         histo -> Fit("f_gaus","QENRS");
+              
+        g_recHitE_RMS_vsIRing[datasetIt] -> SetPoint(point,binCenter,histo->GetRMS());
+        g_recHitE_RMS_vsIRing[datasetIt] -> SetPointError(point,0.,histo->GetRMSError());
+        
+	//         g_recHitE_sigma_vsIRing[datasetIt] -> SetPoint(point,binCenter,f_gaus->GetParameter(2));
+	//         g_recHitE_sigma_vsIRing[datasetIt] -> SetPointError(point,0.,f_gaus->GetParError(2));
+        g_recHitE_sigma_vsIRing[datasetIt] -> SetPoint(point,binCenter,GetEffectiveSigma(histo));
+	g_recHitE_sigma_vsIRing[datasetIt] -> SetPointError(point,0.,histo->GetRMSError());
+        
+	//        delete f_gaus;
+	delete histo;
+
+	if(type == "MCMC"){
+	//PU0        
+sprintf(histoName,"%s/EE/plots_vs_nPU_and_iRing/h_recHitE_nPU-1.0-1.0__iRing%2.1f-%2.1f_EE_%s",dataset.c_str(),binLowEdge,binHigEdge,dataset.c_str());
+        histo = (TH1F*)( f->Get(histoName) );
+	//        histo -> Rebin(rebin);
+
+        g_recHitE_RMS_vsIRing_PU0[datasetIt] -> SetPoint(point,binCenter,histo->GetRMS());
+        g_recHitE_RMS_vsIRing_PU0[datasetIt] -> SetPointError(point,0.,histo->GetRMSError());
+	//        delete f_gaus;
+
+	delete histo;
+
+	//PU70        
+sprintf(histoName,"%s/EE/plots_vs_nPU_and_iRing/h_recHitE_nPU69.0-71.0__iRing%2.1f-%2.1f_EE_%s",dataset.c_str(),binLowEdge,binHigEdge,dataset.c_str());
+        histo = (TH1F*)( f->Get(histoName) );
+	//	histo -> Rebin(rebin);
+
+        g_recHitE_RMS_vsIRing_PU70[datasetIt] -> SetPoint(point,binCenter,histo->GetRMS());
+        g_recHitE_RMS_vsIRing_PU70[datasetIt] -> SetPointError(point,0.,histo->GetRMSError());
+	//        delete f_gaus;
+
+	delete histo;
+
+	//PU140        
+sprintf(histoName,"%s/EE/plots_vs_nPU_and_iRing/h_recHitE_nPU139.0-141.0__iRing%2.1f-%2.1f_EE_%s",dataset.c_str(),binLowEdge,binHigEdge,dataset.c_str());
+        histo = (TH1F*)( f->Get(histoName) );
+//      histo -> Rebin(rebin);
+// 	histo -> Rebin(2);
+
+        g_recHitE_RMS_vsIRing_PU140[datasetIt] -> SetPoint(point,binCenter,histo->GetRMS());
+        g_recHitE_RMS_vsIRing_PU140[datasetIt] -> SetPointError(point,0.,histo->GetRMSError());
+	//        delete f_gaus;
+	//	std::cout << " iRing " << binLowEdge << " " << binHigEdge << "rms = " << histo->GetRMS() << std::endl;
+	delete histo;
+	}
+        ++point;      
+      }
+    }
+  
+
+    std::cout << " >>> h_occupancy_vsEta " << std::endl;
+
+    point = 0;
+    for(int bin = 1; bin <= h_occupancy_vsEta->GetNbinsX(); ++bin)
+    {  
+      float binCenter  = h_occupancy_vsEta -> GetBinCenter(bin);
+      float binLowEdge = h_occupancy_vsEta -> GetBinLowEdge(bin);
+      float binHigEdge = h_occupancy_vsEta -> GetBinLowEdge(bin) + h_occupancy_vsEta->GetBinWidth(bin);
+      
+      if( binCenter == 0 ) continue;
+      
+      if( fabs(binCenter) < 1.4442 )
+      {
+        char histoName[50];
+        sprintf(histoName,"%s/EB/plots_vs_eta/h_recHitE_eta%1.4f-%1.4f_EB_%s",dataset.c_str(),binLowEdge,binHigEdge,dataset.c_str());
+        TH1F* histo = (TH1F*)( f->Get(histoName) );
+        if( histo->GetEntries() < 30 ) continue;
+	histo -> Rebin(rebin);
+        
+        g_recHitE_RMS_vsEta[datasetIt] -> SetPoint(point,binCenter,histo->GetRMS());
+        g_recHitE_RMS_vsEta[datasetIt] -> SetPointError(point,0.,histo->GetRMSError());
+        
+        g_recHitE_sigma_vsEta[datasetIt] -> SetPoint(point,binCenter,GetEffectiveSigma(histo));
+	g_recHitE_sigma_vsEta[datasetIt] -> SetPointError(point,0.,histo->GetRMSError());
+        
+	delete histo;
+
+	if(type == "MCMC"){
+	//PU0
+        sprintf(histoName,"%s/EB/plots_vs_nPU_and_eta/h_recHitE_nPU-1.0-1.0__eta%1.4f-%1.4f_EB_%s",dataset.c_str(),binLowEdge,binHigEdge,dataset.c_str());
+        histo = (TH1F*)( f->Get(histoName) );
+	if( histo->GetEntries() < 30 ) continue;
+	histo -> Rebin(rebin);
+        
+        g_recHitE_RMS_vsEta_PU0[datasetIt] -> SetPoint(point,binCenter,histo->GetRMS());
+        g_recHitE_RMS_vsEta_PU0[datasetIt] -> SetPointError(point,0.,histo->GetRMSError());
+        
+        g_recHitE_sigma_vsEta_PU0[datasetIt] -> SetPoint(point,binCenter,GetEffectiveSigma(histo));
+	g_recHitE_sigma_vsEta_PU0[datasetIt] -> SetPointError(point,0., histo->GetRMSError());
+        
+	delete histo;
+
+	//PU70
+        sprintf(histoName,"%s/EB/plots_vs_nPU_and_eta/h_recHitE_nPU69.0-71.0__eta%1.4f-%1.4f_EB_%s",dataset.c_str(),binLowEdge,binHigEdge,dataset.c_str());
+        histo = (TH1F*)( f->Get(histoName) );
+        if( histo->GetEntries() < 30 ) continue;
+        histo -> Rebin(rebin);
+        
+        g_recHitE_RMS_vsEta_PU70[datasetIt] -> SetPoint(point,binCenter,histo->GetRMS());
+        g_recHitE_RMS_vsEta_PU70[datasetIt] -> SetPointError(point,0.,histo->GetRMSError());
+        
+        g_recHitE_sigma_vsEta_PU70[datasetIt] -> SetPoint(point,binCenter,GetEffectiveSigma(histo));
+        g_recHitE_sigma_vsEta_PU70[datasetIt] -> SetPointError(point,0., histo->GetRMSError());
+        
+	delete histo;
+
+	//PU140
+    sprintf(histoName,"%s/EB/plots_vs_nPU_and_eta/h_recHitE_nPU139.0-141.0__eta%1.4f-%1.4f_EB_%s",dataset.c_str(),binLowEdge,binHigEdge,dataset.c_str());
+        histo = (TH1F*)( f->Get(histoName) );
+        if( histo->GetEntries() < 30 ) continue;
+        histo -> Rebin(rebin);
+	histo -> Rebin(2);
+
+        g_recHitE_RMS_vsEta_PU140[datasetIt] -> SetPoint(point,binCenter,histo->GetRMS());
+        g_recHitE_RMS_vsEta_PU140[datasetIt] -> SetPointError(point,0.,histo->GetRMSError());
+        
+        g_recHitE_sigma_vsEta_PU140[datasetIt] -> SetPoint(point,binCenter,GetEffectiveSigma(histo));
+	g_recHitE_sigma_vsEta_PU140[datasetIt] -> SetPointError(point,0.,histo->GetRMSError());
+        
+	delete histo;
+	}
+        ++point;
+      }
+      else
+      {
+        char histoName[50];
+        sprintf(histoName,"%s/EE/plots_vs_eta/h_recHitE_eta%1.4f-%1.4f_EE_%s",dataset.c_str(),binLowEdge,binHigEdge,dataset.c_str());
+        TH1F* histo = (TH1F*)( f->Get(histoName) );
+        if( histo->GetEntries() < 30 ) continue;
+	histo -> Rebin(rebin);
+        
+        g_recHitE_RMS_vsEta[datasetIt] -> SetPoint(point,binCenter,histo->GetRMS());
+        g_recHitE_RMS_vsEta[datasetIt] -> SetPointError(point,0.,histo->GetRMSError());
+        
+        g_recHitE_sigma_vsEta[datasetIt] -> SetPoint(point,binCenter,GetEffectiveSigma(histo));
+        g_recHitE_sigma_vsEta[datasetIt] -> SetPointError(point,0.,histo->GetRMSError());
+        
+	delete histo;
+
+	if(type == "MCMC"){
+	//PU0
+        sprintf(histoName,"%s/EE/plots_vs_nPU_and_eta/h_recHitE_nPU-1.0-1.0__eta%1.4f-%1.4f_EE_%s",dataset.c_str(),binLowEdge,binHigEdge,dataset.c_str());
+        histo = (TH1F*)( f->Get(histoName) );
+        if( histo->GetEntries() < 30 ) continue;
+	histo -> Rebin(rebin);
+        
+        g_recHitE_RMS_vsEta_PU0[datasetIt] -> SetPoint(point,binCenter,histo->GetRMS());
+        g_recHitE_RMS_vsEta_PU0[datasetIt] -> SetPointError(point,0.,histo->GetRMSError());
+        
+        g_recHitE_sigma_vsEta_PU0[datasetIt] -> SetPoint(point,binCenter,GetEffectiveSigma(histo));
+	g_recHitE_sigma_vsEta_PU0[datasetIt] -> SetPointError(point,0.,histo->GetRMSError());
+        
+	delete histo;
+
+	//PU70
+        sprintf(histoName,"%s/EE/plots_vs_nPU_and_eta/h_recHitE_nPU69.0-71.0__eta%1.4f-%1.4f_EE_%s",dataset.c_str(),binLowEdge,binHigEdge,dataset.c_str());
+        histo = (TH1F*)( f->Get(histoName) );
+        if( histo->GetEntries() < 30 ) continue;
+        histo -> Rebin(rebin);
+        
+        g_recHitE_RMS_vsEta_PU70[datasetIt] -> SetPoint(point,binCenter,histo->GetRMS());
+        g_recHitE_RMS_vsEta_PU70[datasetIt] -> SetPointError(point,0.,histo->GetRMSError());
+        
+        g_recHitE_sigma_vsEta_PU70[datasetIt] -> SetPoint(point,binCenter,GetEffectiveSigma(histo));
+	g_recHitE_sigma_vsEta_PU70[datasetIt] -> SetPointError(point,0.,histo->GetRMSError());
+        
+	delete histo;
+
+	//PU140
+    sprintf(histoName,"%s/EE/plots_vs_nPU_and_eta/h_recHitE_nPU139.0-141.0__eta%1.4f-%1.4f_EE_%s",dataset.c_str(),binLowEdge,binHigEdge,dataset.c_str());
+        histo = (TH1F*)( f->Get(histoName) );
+        if( histo->GetEntries() < 30 ) continue;
+        histo -> Rebin(rebin);
+	histo -> Rebin(2);
+
+        g_recHitE_RMS_vsEta_PU140[datasetIt] -> SetPoint(point,binCenter,histo->GetRMS());
+        g_recHitE_RMS_vsEta_PU140[datasetIt] -> SetPointError(point,0.,histo->GetRMSError());
+        
+        g_recHitE_sigma_vsEta_PU140[datasetIt] -> SetPoint(point,binCenter,GetEffectiveSigma(histo));
+	g_recHitE_sigma_vsEta_PU140[datasetIt] -> SetPointError(point,0.,histo->GetRMSError());
+
+	delete histo;
+	}
+
+        ++point;      
+      }
+    }
+  
+
+    std::cout << " >>> h_occupancy_vsAbsEta " << std::endl;
+
+    point = 0;
+    for(int bin = 1; bin <= h_occupancy_vsAbsEta->GetNbinsX(); ++bin)
+    {  
+      float binCenter  = h_occupancy_vsAbsEta -> GetBinCenter(bin);
+      float binLowEdge = h_occupancy_vsAbsEta -> GetBinLowEdge(bin);
+      float binHigEdge = h_occupancy_vsAbsEta -> GetBinLowEdge(bin) + h_occupancy_vsAbsEta->GetBinWidth(bin);
+      
+      if( binCenter == 0 ) continue;
+      
+      if( fabs(binCenter) < 1.4442 )
+      {
+        char histoName[50];
+        sprintf(histoName,"%s/EB/plots_vs_absEta/h_recHitE_absEta%1.4f-%1.4f_EB_%s",dataset.c_str(),binLowEdge,binHigEdge,dataset.c_str());
+        TH1F* histo = (TH1F*)( f->Get(histoName) );
+        if( histo->GetEntries() < 30 ) continue;
+        histo -> Rebin(rebin);
+        
+        g_recHitE_RMS_vsAbsEta[datasetIt] -> SetPoint(point,binCenter,histo->GetRMS());
+        g_recHitE_RMS_vsAbsEta[datasetIt] -> SetPointError(point,0.,histo->GetRMSError());
+        
+	//	std::cout << " >>> all - |eta| << " << binLowEdge << " " << binHigEdge << " " << GetEffectiveSigma(histo) << std::endl;
+	float sigmaPUContrib = GetEffectiveSigma(histo);
+	float sigmaPUContribE = histo->GetRMSError();
+	float sigmaPUContrib2 = pow(sigmaPUContrib, 2);
+        g_recHitE_sigma_vsAbsEta[datasetIt] -> SetPoint(point,binCenter, sigmaPUContrib);
+        g_recHitE_sigma_vsAbsEta[datasetIt] -> SetPointError(point,0.,histo->GetRMSError());
+        
+	double x, y;
+	float sigmaAt0PUPUContrib = g_recHitE_sigmaAt0PU_vsAbsEta[datasetIt]->GetPoint(point, x, y);
+	double ey = g_recHitE_sigmaAt0PU_vsAbsEta[datasetIt]->GetErrorY(point);
+	if(y < sigmaPUContrib) g_recHitE_sigma_vsAbsEtans[datasetIt] -> SetPoint(point,binCenter, sqrt(sigmaPUContrib2 - y*y));
+	else g_recHitE_sigma_vsAbsEtans[datasetIt] -> SetPoint(point,binCenter, 0. );
+	double numE = pow(sigmaPUContrib * sigmaPUContribE, 2) + pow(y*ey, 2);
+	double denE = sigmaPUContrib2 - y*y;
+	//	g_recHitE_sigma_vsAbsEtans[datasetIt] -> SetPointError(point,0., sqrt(numE/denE));
+	//	g_recHitE_sigma_vsAbsEtans[datasetIt] -> SetPointError(point,0., 0.);
+	g_recHitE_sigma_vsAbsEtans[datasetIt] -> SetPointError(point,0., histo->GetRMSError());
+
+	double xp, yp;
+	float sigmaAt70PUPUContrib = g_recHitE_sigmaAt70PU_vsAbsEta[datasetIt]->GetPoint(point, xp, yp);
+	double eyp = g_recHitE_sigmaAt70PU_vsAbsEta[datasetIt]->GetErrorY(point);
+	if(y < yp) g_recHitE_sigmaAt70PU_vsAbsEtans[datasetIt] -> SetPoint(point,binCenter, sqrt(yp*yp - y*y));
+	else g_recHitE_sigmaAt70PU_vsAbsEtans[datasetIt] -> SetPoint(point,binCenter, 0. );
+	double numEp = pow(yp*eyp, 2) + pow(y*ey, 2);
+	double denEp = yp*yp - y*y;
+	//        g_recHitE_sigmaAt70PU_vsAbsEtans[datasetIt] -> SetPointError(point,0.,sqrt(numEp/denEp));
+	//        g_recHitE_sigmaAt70PU_vsAbsEtans[datasetIt] -> SetPointError(point,0.,0.);
+        g_recHitE_sigmaAt70PU_vsAbsEtans[datasetIt] -> SetPointError(point,0.,eyp);
+
+
+	float sigmaAt140PUPUContrib = g_recHitE_sigmaAt140PU_vsAbsEta[datasetIt]->GetPoint(point, xp, yp);
+	eyp = g_recHitE_sigmaAt140PU_vsAbsEta[datasetIt]->GetErrorY(point);
+	if(y < yp) g_recHitE_sigmaAt140PU_vsAbsEtans[datasetIt] -> SetPoint(point,binCenter, sqrt(yp*yp - y*y));
+	else g_recHitE_sigmaAt140PU_vsAbsEtans[datasetIt] -> SetPoint(point,binCenter, 0. );
+	numEp = pow(yp*eyp, 2) + pow(y*ey, 2);
+	denEp = yp*yp - y*y;
+	//        g_recHitE_sigmaAt140PU_vsAbsEtans[datasetIt] -> SetPointError(point,0.,sqrt(numEp/denEp));
+	//        g_recHitE_sigmaAt140PU_vsAbsEtans[datasetIt] -> SetPointError(point,0.,0.);
+        g_recHitE_sigmaAt140PU_vsAbsEtans[datasetIt] -> SetPointError(point,0.,eyp);
+
+
+	delete histo;
+
+	if(type == "MCMC"){
+	//PU0
+  sprintf(histoName,"%s/EB/plots_vs_nPU_and_absEta/h_recHitE_nPU-1.0-1.0__absEta%1.4f-%1.4f_EB_%s",dataset.c_str(),binLowEdge,binHigEdge,dataset.c_str());
+        histo = (TH1F*)( f->Get(histoName) );
+	//        if( histo->GetEntries() < 30 ) continue;
+	//        histo -> Rebin(rebin);
+
+	float rmsPU0contrib = histo->GetRMS();
+	float rmsPU0contrib2 = pow(rmsPU0contrib,2);      
+        g_recHitE_RMS_vsAbsEta_PU0[datasetIt] -> SetPoint(point,binCenter,rmsPU0contrib);
+        g_recHitE_RMS_vsAbsEta_PU0[datasetIt] -> SetPointError(point,0.,histo->GetRMSError());
+        
+	float PU0contrib = GetEffectiveSigma(histo);
+	float PU0ContribE = histo->GetRMSError();
+	float PU0contrib2 = pow(PU0contrib,2);
+        g_recHitE_sigma_vsAbsEta_PU0[datasetIt]->SetPoint(point,binCenter,PU0contrib);
+        g_recHitE_sigma_vsAbsEta_PU0[datasetIt]->SetPointError(point,0., histo->GetRMSError());
+	//	std::cout << " >>> PU 0 - |eta| << " << binLowEdge << " " << binHigEdge << " " << PU0contrib << std::endl;
+        
+	delete histo;
+
+	//PU70
+  sprintf(histoName,"%s/EB/plots_vs_nPU_and_absEta/h_recHitE_nPU69.0-71.0__absEta%1.4f-%1.4f_EB_%s",dataset.c_str(),binLowEdge,binHigEdge,dataset.c_str());
+        histo = (TH1F*)( f->Get(histoName) );
+	//	if( histo->GetEntries() < 30 ) continue;
+	//        histo -> Rebin(rebin);
+        
+	float rmsPU70contrib = histo->GetRMS();
+	float rmsPU70contrib2 = pow(rmsPU70contrib,2);      
+        g_recHitE_RMS_vsAbsEta_PU70[datasetIt] -> SetPoint(point,binCenter,histo->GetRMS());
+        g_recHitE_RMS_vsAbsEta_PU70[datasetIt] -> SetPointError(point,0.,histo->GetRMSError());
+        g_recHitE_RMS_vsAbsEta_PU70ns[datasetIt] -> SetPoint(point,binCenter, sqrt(rmsPU70contrib2 - rmsPU0contrib2) );
+        g_recHitE_RMS_vsAbsEta_PU70ns[datasetIt] -> SetPointError(point,0.,histo->GetRMSError());
+        
+	float PU70contrib = GetEffectiveSigma(histo);
+	float PU70ContribE = histo->GetRMSError();
+	float PU70contrib2 = pow(PU70contrib,2);
+        g_recHitE_sigma_vsAbsEta_PU70[datasetIt] -> SetPoint(point,binCenter,PU70contrib);
+	g_recHitE_sigma_vsAbsEta_PU70[datasetIt] -> SetPointError(point,0.,PU70ContribE);
+        g_recHitE_sigma_vsAbsEta_PU70ns[datasetIt]->SetPoint(point,binCenter,sqrt(PU70contrib2 - PU0contrib2));
+	numE = pow(PU70contrib * PU70ContribE, 2) + pow(PU0contrib * PU0ContribE, 2);
+	denE = PU70ContribE - PU0contrib2;
+	//	g_recHitE_sigma_vsAbsEta_PU70ns[datasetIt] -> SetPointError(point,0., sqrt(numE/denE));
+	//	g_recHitE_sigma_vsAbsEta_PU70ns[datasetIt] -> SetPointError(point,0., 0.);
+	g_recHitE_sigma_vsAbsEta_PU70ns[datasetIt] -> SetPointError(point,0., histo->GetRMSError());
+
+	//	std::cout << " >>> PU 70 - |eta| << " << binLowEdge << " " << binHigEdge << " " << PU70contrib << std::endl;	
+	delete histo;
+
+	//PU140
+sprintf(histoName,"%s/EB/plots_vs_nPU_and_absEta/h_recHitE_nPU139.0-141.0__absEta%1.4f-%1.4f_EB_%s",dataset.c_str(),binLowEdge,binHigEdge,dataset.c_str());
+        histo = (TH1F*)( f->Get(histoName) );
+	//	if( histo->GetEntries() < 30 ) continue;
+	//        histo -> Rebin(rebin);
+	histo -> Rebin(2);
+
+	float rmsPU140contrib = histo->GetRMS();
+	float rmsPU140contrib2 = pow(rmsPU140contrib,2);      
+        g_recHitE_RMS_vsAbsEta_PU140[datasetIt] -> SetPoint(point,binCenter,histo->GetRMS());
+	g_recHitE_RMS_vsAbsEta_PU140[datasetIt] -> SetPointError(point,0.,histo->GetRMSError());
+        g_recHitE_RMS_vsAbsEta_PU140ns[datasetIt]->SetPoint(point,binCenter,sqrt(rmsPU140contrib2 - rmsPU0contrib2));
+        g_recHitE_RMS_vsAbsEta_PU140ns[datasetIt]->SetPointError(point,0.,histo->GetRMSError());
+        
+	float PU140contrib = GetEffectiveSigma(histo);
+	float PU140ContribE = histo->GetRMSError();
+	float PU140contrib2 = pow(PU140contrib,2);
+
+        g_recHitE_sigma_vsAbsEta_PU140[datasetIt] -> SetPoint(point,binCenter,PU140contrib);
+        g_recHitE_sigma_vsAbsEta_PU140[datasetIt] -> SetPointError(point,0.,PU140ContribE);
+        g_recHitE_sigma_vsAbsEta_PU140ns[datasetIt]->SetPoint(point,binCenter,sqrt(PU140contrib2 - PU0contrib2));
+	numE = pow(PU140contrib * PU140ContribE, 2) + pow(PU0contrib * PU0ContribE, 2);
+        denE = PU140ContribE - PU0contrib2;
+	//        g_recHitE_sigma_vsAbsEta_PU140ns[datasetIt] -> SetPointError(point,0., sqrt(numE/denE));
+	//        g_recHitE_sigma_vsAbsEta_PU140ns[datasetIt] -> SetPointError(point,0., 0.);
+        g_recHitE_sigma_vsAbsEta_PU140ns[datasetIt] -> SetPointError(point,0., histo->GetRMSError());
+        
+	//	std::cout << " >>> PU 140 - |eta| << " << binLowEdge << " " << binHigEdge << " " << PU140contrib << std::endl;	
+	delete histo;
+	}
+        ++point;
+      }
+      else
+      {
+        char histoName[50];
+        sprintf(histoName,"%s/EE/plots_vs_absEta/h_recHitE_absEta%1.4f-%1.4f_EE_%s",dataset.c_str(),binLowEdge,binHigEdge,dataset.c_str());
+        TH1F* histo = (TH1F*)( f->Get(histoName) );
+	if( histo->GetEntries() < 30 ) continue;
+	histo -> Rebin(rebin);
+        
+              
+        g_recHitE_RMS_vsAbsEta[datasetIt] -> SetPoint(point,binCenter,histo->GetRMS());
+        g_recHitE_RMS_vsAbsEta[datasetIt] -> SetPointError(point,0.,histo->GetRMSError());
+        
+	//	std::cout << " >>> all - |eta| << " << binLowEdge << " " << binHigEdge << " " << GetEffectiveSigma(histo) << std::endl;	
+	float sigmaPUContrib = GetEffectiveSigma(histo);
+	float sigmaPUContribE = histo->GetRMSError();
+	float sigmaPUContrib2 = pow(sigmaPUContrib, 2);
+        g_recHitE_sigma_vsAbsEta[datasetIt] -> SetPoint(point,binCenter,GetEffectiveSigma(histo));
+	g_recHitE_sigma_vsAbsEta[datasetIt] -> SetPointError(point,0.,sigmaPUContribE);
+
+
+	double x, y;
+	float sigmaAt0PUPUContrib = g_recHitE_sigmaAt0PU_vsAbsEta[datasetIt]->GetPoint(point, x, y);
+	double ey = g_recHitE_sigmaAt0PU_vsAbsEta[datasetIt]->GetErrorY(point);
+	if(y < sigmaPUContrib) g_recHitE_sigma_vsAbsEtans[datasetIt] -> SetPoint(point,binCenter, sqrt(sigmaPUContrib2 - y*y));
+	else g_recHitE_sigma_vsAbsEtans[datasetIt] -> SetPoint(point,binCenter, 0. );
+	double numE = pow(sigmaPUContrib * sigmaPUContribE, 2) + pow(y*ey, 2);
+	double denE = sigmaPUContrib2 - y*y;
+	//	g_recHitE_sigma_vsAbsEtans[datasetIt] -> SetPointError(point,0., sqrt(numE/denE));
+	//	g_recHitE_sigma_vsAbsEtans[datasetIt] -> SetPointError(point,0., 0.);
+	g_recHitE_sigma_vsAbsEtans[datasetIt] -> SetPointError(point,0., histo->GetRMSError());
+
+	double xp, yp;
+	float sigmaAt70PUPUContrib = g_recHitE_sigmaAt70PU_vsAbsEta[datasetIt]->GetPoint(point, xp, yp);
+	double eyp = g_recHitE_sigmaAt70PU_vsAbsEta[datasetIt]->GetErrorY(point);
+	if(y < yp) g_recHitE_sigmaAt70PU_vsAbsEtans[datasetIt] -> SetPoint(point,binCenter, sqrt(yp*yp - y*y));
+	else g_recHitE_sigmaAt70PU_vsAbsEtans[datasetIt] -> SetPoint(point,binCenter, 0. );
+	double numEp = pow(yp*eyp, 2) + pow(y*ey, 2);
+	double denEp = yp*yp - y*y;
+	//	g_recHitE_sigmaAt70PU_vsAbsEtans[datasetIt] -> SetPointError(point,0.,sqrt(numEp/denEp));
+	//	g_recHitE_sigmaAt70PU_vsAbsEtans[datasetIt] -> SetPointError(point,0.,0.);
+	g_recHitE_sigmaAt70PU_vsAbsEtans[datasetIt] -> SetPointError(point,0.,eyp);
+
+	float sigmaAt140PUPUContrib = g_recHitE_sigmaAt140PU_vsAbsEta[datasetIt]->GetPoint(point, xp, yp);
+	eyp = g_recHitE_sigmaAt140PU_vsAbsEta[datasetIt]->GetErrorY(point);
+	if(y < yp) g_recHitE_sigmaAt140PU_vsAbsEtans[datasetIt] -> SetPoint(point,binCenter, sqrt(yp*yp - y*y));
+	else g_recHitE_sigmaAt140PU_vsAbsEtans[datasetIt] -> SetPoint(point,binCenter, 0. );
+	numEp = pow(yp*eyp, 2) + pow(y*ey, 2);
+	denEp = yp*yp - y*y;
+	//	g_recHitE_sigmaAt140PU_vsAbsEtans[datasetIt] -> SetPointError(point,0.,sqrt(numEp/denEp));
+	//	g_recHitE_sigmaAt140PU_vsAbsEtans[datasetIt] -> SetPointError(point,0.,0.);
+	g_recHitE_sigmaAt140PU_vsAbsEtans[datasetIt] -> SetPointError(point,0.,eyp);
+        
+	delete histo;
+
+	if(type == "MCMC"){
+	//PU0
+  sprintf(histoName,"%s/EE/plots_vs_nPU_and_absEta/h_recHitE_nPU-1.0-1.0__absEta%1.4f-%1.4f_EE_%s",dataset.c_str(),binLowEdge,binHigEdge,dataset.c_str());
+        histo = (TH1F*)( f->Get(histoName) );
+	//	if( histo->GetEntries() < 30 ) continue;
+	//        histo -> Rebin(rebin);
+        
+
+	float rmsPU0contrib = histo->GetRMS();
+	float rmsPU0contrib2 = pow(rmsPU0contrib,2);      
+        g_recHitE_RMS_vsAbsEta_PU0[datasetIt] -> SetPoint(point,binCenter,histo->GetRMS());
+        g_recHitE_RMS_vsAbsEta_PU0[datasetIt] -> SetPointError(point,0.,histo->GetRMSError());
+        
+
+	float PU0contrib = GetEffectiveSigma(histo);
+	float PU0ContribE = histo->GetRMSError();
+        float PU0contrib2 = pow(PU0contrib,2);
+
+        g_recHitE_sigma_vsAbsEta_PU0[datasetIt] -> SetPoint(point,binCenter,PU0contrib);
+        g_recHitE_sigma_vsAbsEta_PU0[datasetIt] -> SetPointError(point,0.,PU0ContribE);
+	//	std::cout << " >>> PU 0 - |eta| << " << binLowEdge << " " << binHigEdge << " " << PU0contrib << std::endl;	
+
+	delete histo;
+
+	//PU70
+  sprintf(histoName,"%s/EE/plots_vs_nPU_and_absEta/h_recHitE_nPU69.0-71.0__absEta%1.4f-%1.4f_EE_%s",dataset.c_str(),binLowEdge,binHigEdge,dataset.c_str());
+        histo = (TH1F*)( f->Get(histoName) );
+	//        if( histo->GetEntries() < 30 ) continue;
+	//	histo -> Rebin(rebin);
+        
+	float rmsPU70contrib = histo->GetRMS();
+	float rmsPU70contrib2 = pow(rmsPU70contrib,2);            
+        g_recHitE_RMS_vsAbsEta_PU70[datasetIt] -> SetPoint(point,binCenter,histo->GetRMS());
+        g_recHitE_RMS_vsAbsEta_PU70[datasetIt] -> SetPointError(point,0.,histo->GetRMSError());
+        g_recHitE_RMS_vsAbsEta_PU70ns[datasetIt] -> SetPoint(point,binCenter, sqrt(rmsPU70contrib2 - rmsPU0contrib2));
+        g_recHitE_RMS_vsAbsEta_PU70ns[datasetIt] -> SetPointError(point,0.,histo->GetRMSError());
+        
+
+	float PU70contrib = GetEffectiveSigma(histo);
+	float PU70ContribE = histo->GetRMSError();
+	float PU70contrib2 = pow(PU70contrib,2);
+        g_recHitE_sigma_vsAbsEta_PU70[datasetIt] -> SetPoint(point,binCenter,GetEffectiveSigma(histo));
+        g_recHitE_sigma_vsAbsEta_PU70[datasetIt] -> SetPointError(point,0.,PU70ContribE);
+        g_recHitE_sigma_vsAbsEta_PU70ns[datasetIt]->SetPoint(point,binCenter,sqrt(PU70contrib2 - PU0contrib2));
+	numE = pow(PU70contrib * PU70ContribE, 2) + pow(PU0contrib * PU0ContribE, 2);
+        denE = PU70ContribE - PU0contrib2;
+	//        g_recHitE_sigma_vsAbsEta_PU70ns[datasetIt] -> SetPointError(point,0., sqrt(numE/denE));
+	//        g_recHitE_sigma_vsAbsEta_PU70ns[datasetIt] -> SetPointError(point,0., 0.);
+        g_recHitE_sigma_vsAbsEta_PU70ns[datasetIt] -> SetPointError(point,0., histo->GetRMSError());
+
+	//	std::cout << " >>> PU 70 - |eta| << " << binLowEdge << " " << binHigEdge << " " << PU70contrib << std::endl;	
+	delete histo;
+
+	//PU140
+sprintf(histoName,"%s/EE/plots_vs_nPU_and_absEta/h_recHitE_nPU139.0-141.0__absEta%1.4f-%1.4f_EE_%s",dataset.c_str(),binLowEdge,binHigEdge,dataset.c_str());
+        histo = (TH1F*)( f->Get(histoName) );
+	//	if( histo->GetEntries() < 30 ) continue;
+	//        histo -> Rebin(rebin);
+	histo -> Rebin(2);
+
+	float rmsPU140contrib = histo->GetRMS();
+        float rmsPU140contrib2 = pow(rmsPU140contrib,2);
+        g_recHitE_RMS_vsAbsEta_PU140[datasetIt] -> SetPoint(point,binCenter,histo->GetRMS());
+        g_recHitE_RMS_vsAbsEta_PU140[datasetIt] -> SetPointError(point,0.,histo->GetRMSError());
+        g_recHitE_RMS_vsAbsEta_PU140ns[datasetIt] -> SetPoint(point,binCenter,sqrt(rmsPU140contrib2 - rmsPU0contrib2));
+        g_recHitE_RMS_vsAbsEta_PU140ns[datasetIt] -> SetPointError(point,0.,histo->GetRMSError());
+
+
+	float PU140contrib = GetEffectiveSigma(histo);
+	float PU140ContribE = histo->GetRMSError();
+	float PU140contrib2 = pow(PU140contrib,2);        
+        g_recHitE_sigma_vsAbsEta_PU140[datasetIt] -> SetPoint(point,binCenter,GetEffectiveSigma(histo));
+        g_recHitE_sigma_vsAbsEta_PU140[datasetIt] -> SetPointError(point,0.,PU140ContribE);
+        g_recHitE_sigma_vsAbsEta_PU140ns[datasetIt]->SetPoint(point,binCenter,sqrt(PU140contrib2 - PU0contrib2));
+	numE = pow(PU140contrib * PU140ContribE, 2) + pow(PU0contrib * PU0ContribE, 2);
+        denE = PU140ContribE - PU0contrib2;
+        g_recHitE_sigma_vsAbsEta_PU140ns[datasetIt] -> SetPointError(point,0., sqrt(numE/denE));
+	//        g_recHitE_sigma_vsAbsEta_PU140ns[datasetIt] -> SetPointError(point,0., 0.);
+        g_recHitE_sigma_vsAbsEta_PU140ns[datasetIt] -> SetPointError(point,0., histo->GetRMSError());
+
+	//	std::cout << " >>> PU 140 - |eta| << " << binLowEdge << " " << binHigEdge << " " << PU140contrib << std::endl;	
+        //histo->GetBinWidth(1);
+	delete histo;
+	}
+        ++point;      
+      }
+    }
+
   }
   
   
+  std::cout << " >>>>>>>>>>>>>> DRAW " << std::endl;
   
   char canvasName[50];
   
-  std::string folderName = baseDir+"/output/noisePlots__" + label + "/";
-  system(("mkdir "+folderName).c_str());
+//   std::string folderName = baseDir+"/output/noisePlots__" + label + "/";
+//   system(("mkdir "+folderName).c_str());
   
   leg = NULL;
   
@@ -911,8 +1241,11 @@ sprintf(histoName,"%s/EE/plots_vs_nPU_and_absEta/h_recHitE_nPU139.0-141.0__absEt
   leg = NULL;
   
   
-  
-  
+  std::cout << " >>>>>>>>>>>>>> TFILE " << std::endl;
+
+  TFile outPlots(("outPlots_"+type+".root").c_str(),"recreate");
+  outPlots.cd();  
+
   //----------------------
   // draw exclusive graphs
     
@@ -921,95 +1254,171 @@ sprintf(histoName,"%s/EE/plots_vs_nPU_and_absEta/h_recHitE_nPU139.0-141.0__absEt
   c -> SetGridx();
   c -> SetGridy();
   gEB_recHitE_RMS_vsNPU[0] -> Draw("AP");
-  gEB_recHitE_RMS_vsNPU[1] -> Draw("P,same");
+  if(type == "DAMC") gEB_recHitE_RMS_vsNPU[1] -> Draw("P,same");
   SetGraphStyle(gEB_recHitE_RMS_vsNPU[0],"DA","EB","vsNPU","recHitE_RMS",&leg);
-  SetGraphStyle(gEB_recHitE_RMS_vsNPU[1],"MC","EB","vsNPU","recHitE_RMS",&leg);
-  leg -> Draw("same");
+  if(type == "DAMC") SetGraphStyle(gEB_recHitE_RMS_vsNPU[1],"MC","EB","vsNPU","recHitE_RMS",&leg);
+  //  if(type == "DAMC") leg -> Draw("same");
+  if(type == "DAMC") {
+    gEB_recHitE_RMS_vsNPU[0]->GetXaxis()->SetRangeUser(0.,50.);
+    gEB_recHitE_RMS_vsNPU[0]->SetMaximum(0.5);
+  }
   c -> Print((folderName+"gEB_recHitE_RMS_vsNPU.png").c_str(),"png");
   delete c;
   leg = NULL;
-  
+  gEB_recHitE_RMS_vsNPU[0]->Write("gEB_recHitE_RMS_vsNPU_DA");
+  gEB_recHitE_RMS_vsNPU[1]->Write("gEB_recHitE_RMS_vsNPU_MC");
+
   sprintf(canvasName,"cEE_recHitE_RMS_vsNPU");
   c = new TCanvas(canvasName,canvasName);
   c -> SetGridx();
   c -> SetGridy();
   gEE_recHitE_RMS_vsNPU[0] -> Draw("AP");
-  gEE_recHitE_RMS_vsNPU[1] -> Draw("P,same");
+  if(type == "DAMC") gEE_recHitE_RMS_vsNPU[1] -> Draw("P, same");
   SetGraphStyle(gEE_recHitE_RMS_vsNPU[0],"DA","EE","vsNPU","recHitE_RMS",&leg);
-  SetGraphStyle(gEE_recHitE_RMS_vsNPU[1],"MC","EE","vsNPU","recHitE_RMS",&leg);
-  leg -> Draw("same");
+  if(type == "DAMC") SetGraphStyle(gEE_recHitE_RMS_vsNPU[1],"MC","EE","vsNPU","recHitE_RMS",&leg);
+  if(type == "DAMC") {
+    gEE_recHitE_RMS_vsNPU[0]->GetXaxis()->SetRangeUser(0.,50.);
+    gEE_recHitE_RMS_vsNPU[0]->SetMaximum(0.5);
+  }
+  //  if(type == "DAMC") leg -> Draw("same");
   c -> Print((folderName+"gEE_recHitE_RMS_vsNPU.png").c_str(),"png");
   delete c;
   leg = NULL;
-  
+  gEE_recHitE_RMS_vsNPU[0]->Write("gEE_recHitE_RMS_vsNPU_DA");
+  gEE_recHitE_RMS_vsNPU[1]->Write("gEE_recHitE_RMS_vsNPU_MC");  
   
   sprintf(canvasName,"cEB_recHitE_sigma_vsNPU");
   c = new TCanvas(canvasName,canvasName);
   c -> SetGridx();
   c -> SetGridy();
   gEB_recHitE_sigma_vsNPU[0] -> Draw("AP");
-  gEB_recHitE_sigma_vsNPU[1] -> Draw("P,same");
+  if(type == "DAMC") gEB_recHitE_sigma_vsNPU[1] -> Draw("P,same");
   SetGraphStyle(gEB_recHitE_sigma_vsNPU[0],"DA","EB","vsNPU","recHitE_sigma",&leg);
-  SetGraphStyle(gEB_recHitE_sigma_vsNPU[1],"MC","EB","vsNPU","recHitE_sigma",&leg);
-  leg -> Draw("same");
+  if(type == "DAMC") SetGraphStyle(gEB_recHitE_sigma_vsNPU[1],"MC","EB","vsNPU","recHitE_sigma",&leg);
+  if(type == "DAMC") {
+    gEB_recHitE_sigma_vsNPU[0]->GetXaxis()->SetRangeUser(0.,50.);
+    gEB_recHitE_sigma_vsNPU[0]->SetMaximum(0.5);
+  }
+  //  if(type == "DAMC") leg -> Draw("same");
   c -> Print((folderName+"gEB_recHitE_sigma_vsNPU.png").c_str(),"png");
   delete c;
   leg = NULL;
+  gEB_recHitE_sigma_vsNPU[0]->Write("gEB_recHitE_sigma_vsNPU_DA");
+  gEB_recHitE_sigma_vsNPU[1]->Write("gEB_recHitE_sigma_vsNPU_MC");
   
   sprintf(canvasName,"cEE_recHitE_sigma_vsNPU");
   c = new TCanvas(canvasName,canvasName);
   c -> SetGridx();
   c -> SetGridy();
   gEE_recHitE_sigma_vsNPU[0] -> Draw("AP");
-  gEE_recHitE_sigma_vsNPU[1] -> Draw("P,same");
+  if(type == "DAMC") gEE_recHitE_sigma_vsNPU[1] -> Draw("P,same");
   SetGraphStyle(gEE_recHitE_sigma_vsNPU[0],"DA","EE","vsNPU","recHitE_sigma",&leg);
-  SetGraphStyle(gEE_recHitE_sigma_vsNPU[1],"MC","EE","vsNPU","recHitE_sigma",&leg);
-  leg -> Draw("same");
+  if(type == "DAMC") SetGraphStyle(gEE_recHitE_sigma_vsNPU[1],"MC","EE","vsNPU","recHitE_sigma",&leg);
+  if(type == "DAMC"){
+    gEE_recHitE_sigma_vsNPU[0]->GetXaxis()->SetRangeUser(0.,50.);
+    gEE_recHitE_sigma_vsNPU[0]->SetMaximum(0.5);
+  }
+  //  if(type == "DAMC") leg -> Draw("same");
   c -> Print((folderName+"gEE_recHitE_sigma_vsNPU.png").c_str(),"png");
   delete c;
   leg = NULL;
-  
+  gEE_recHitE_sigma_vsNPU[0]->Write("gEE_recHitE_sigma_vsNPU_DA");
+  gEE_recHitE_sigma_vsNPU[1]->Write("gEE_recHitE_sigma_vsNPU_MC");
     
   sprintf(canvasName,"c_recHitE_RMS_vsIRing");
   c = new TCanvas(canvasName,canvasName);
   c -> SetGridx();
-  c -> SetGridy();
-  // g_recHitE_RMS_vsIRing[0] -> Draw("AP");
-  //  g_recHitE_RMS_vsIRing[1] -> Draw("P,same");
+ c -> SetGridy();
   g_recHitE_RMS_vsIRing_PU0[1] -> Draw("AP");
   g_recHitE_RMS_vsIRing_PU70[1] -> Draw("P,same");
   g_recHitE_RMS_vsIRing_PU140[1] -> Draw("P,same");
-  //  SetGraphStyle(g_recHitE_RMS_vsIRing[0],"DA","EBEE","vsIRing","recHitE_RMS",&leg);
-  //  SetGraphStyle(g_recHitE_RMS_vsIRing[1],"MC","EBEE","vsIRing","recHitE_RMS",&leg);
-  SetGraphStyle(g_recHitE_RMS_vsIRing_PU0[1],"MC_PU0","EBEE","vsIRing","recHitE_RMS",&leg);
-  SetGraphStyle(g_recHitE_RMS_vsIRing_PU70[1],"MC_PU70","EBEE","vsIRing","recHitE_RMS",&leg);
-  SetGraphStyle(g_recHitE_RMS_vsIRing_PU140[1],"MC_PU140","EBEE","vsIRing","recHitE_RMS",&leg);
+  if(type == "DAMC"){
+    g_recHitE_RMS_vsIRing[0] -> Draw("P,same");
+    g_recHitE_RMS_vsIRing[1] -> Draw("P,same");
+    SetGraphStyle(g_recHitE_RMS_vsIRing[0],"DA","EBEE","vsIRing","recHitE_RMS",&leg);
+    SetGraphStyle(g_recHitE_RMS_vsIRing[1],"MC","EBEE","vsIRing","recHitE_RMS",&leg);
+  }
+  if(type == "MCMC"){
+    SetGraphStyle(g_recHitE_RMS_vsIRing_PU0[1],"MC_PU0","EBEE","vsIRing","recHitE_RMS",&leg);
+    SetGraphStyle(g_recHitE_RMS_vsIRing_PU70[1],"MC_PU70","EBEE","vsIRing","recHitE_RMS",&leg);
+    SetGraphStyle(g_recHitE_RMS_vsIRing_PU140[1],"MC_PU140","EBEE","vsIRing","recHitE_RMS",&leg);
+  }
   gNuGun_recHitE_RMS_vsIRing -> Draw("L,same");
   leg -> Draw("same");
   c -> Print((folderName+"g_recHitE_RMS_vsIRing.png").c_str(),"png");
   delete c;
   leg = NULL;
+  if(type == "DAMC"){
+    g_recHitE_RMS_vsIRing[0]->Write("g_recHitE_RMS_vsIRing_DA"); 
+    g_recHitE_RMS_vsIRing[1]->Write("g_recHitE_RMS_vsIRing_MC"); 
+  }
+  g_recHitE_RMS_vsIRing_PU0[1]->Write("g_recHitE_RMS_vsIRing_PU0_MC");
+  g_recHitE_RMS_vsIRing_PU70[1]->Write("g_recHitE_RMS_vsIRing_PU70_MC");
+  g_recHitE_RMS_vsIRing_PU140[1]->Write("g_recHitE_RMS_vsIRing_PU140_MC");
+
 
   sprintf(canvasName,"c_recHitE_RMS_vsIRing_log");
   c = new TCanvas(canvasName,canvasName);
   c->SetLogy();
   c -> SetGridx();
   c -> SetGridy();
-  // g_recHitE_RMS_vsIRing[0] -> Draw("AP");
-  //  g_recHitE_RMS_vsIRing[1] -> Draw("P,same");
   g_recHitE_RMS_vsIRing_PU0[1] -> Draw("AP");
   g_recHitE_RMS_vsIRing_PU70[1] -> Draw("P,same");
   g_recHitE_RMS_vsIRing_PU140[1] -> Draw("P,same");
-  //  SetGraphStyle(g_recHitE_RMS_vsIRing[0],"DA","EBEE","vsIRing","recHitE_RMS",&leg);
-  //  SetGraphStyle(g_recHitE_RMS_vsIRing[1],"MC","EBEE","vsIRing","recHitE_RMS",&leg);
-  SetGraphStyle(g_recHitE_RMS_vsIRing_PU0[1],"MC_PU0","EBEE","vsIRing","recHitE_RMS",&leg);
-  SetGraphStyle(g_recHitE_RMS_vsIRing_PU70[1],"MC_PU70","EBEE","vsIRing","recHitE_RMS",&leg);
-  SetGraphStyle(g_recHitE_RMS_vsIRing_PU140[1],"MC_PU140","EBEE","vsIRing","recHitE_RMS",&leg);
+  if(type == "DAMC"){
+    g_recHitE_RMS_vsIRing[0] -> Draw("P,same");
+    g_recHitE_RMS_vsIRing[1] -> Draw("P,same");
+    SetGraphStyle(g_recHitE_RMS_vsIRing[0],"DA","EBEE","vsIRing","recHitE_RMS",&leg);
+    SetGraphStyle(g_recHitE_RMS_vsIRing[1],"MC","EBEE","vsIRing","recHitE_RMS",&leg);
+  }
+  if(type == "MCMC"){
+    SetGraphStyle(g_recHitE_RMS_vsIRing_PU0[1],"MC_PU0","EBEE","vsIRing","recHitE_RMS",&leg);
+    SetGraphStyle(g_recHitE_RMS_vsIRing_PU70[1],"MC_PU70","EBEE","vsIRing","recHitE_RMS",&leg);
+    SetGraphStyle(g_recHitE_RMS_vsIRing_PU140[1],"MC_PU140","EBEE","vsIRing","recHitE_RMS",&leg);
+  }
   gNuGun_recHitE_RMS_vsIRing -> Draw("L,same");
   leg -> Draw("same");
   c -> Print((folderName+"g_recHitE_RMS_vsIRing_log.png").c_str(),"png");
   delete c;
   leg = NULL;
+
+
+  sprintf(canvasName,"c_recHitE_sigma_vsAbsEta");
+  c = new TCanvas(canvasName,canvasName);
+  c -> SetGridx();
+  c -> SetGridy();
+  g_recHitE_sigma_vsAbsEta_PU0[1] -> Draw("AP");
+  g_recHitE_sigma_vsAbsEta_PU70[1] -> Draw("P,same");
+  g_recHitE_sigma_vsAbsEta_PU140[1] -> Draw("P,same");
+  if(type == "DAMC"){
+    g_recHitE_sigma_vsAbsEta[0] -> Draw("P,same");
+    g_recHitE_sigma_vsAbsEta[1] -> Draw("P,same");
+    SetGraphStyle(g_recHitE_sigma_vsAbsEta[0],"DA","EBEE","vsAbsEta","recHitE_sigma",&leg);
+    SetGraphStyle(g_recHitE_sigma_vsAbsEta[1],"MC","EBEE","vsAbsEta","recHitE_sigma",&leg);
+  }
+  if(type == "MCMC"){
+    SetGraphStyle(g_recHitE_sigma_vsAbsEta_PU0[1],"MC_PU0","EBEE","vsAbsEta","recHitE_sigma",&leg);
+    SetGraphStyle(g_recHitE_sigma_vsAbsEta_PU70[1],"MC_PU70","EBEE","vsAbsEta","recHitE_sigma",&leg);
+    SetGraphStyle(g_recHitE_sigma_vsAbsEta_PU140[1],"MC_PU140","EBEE","vsAbsEta","recHitE_sigma",&leg);
+  }
+  leg -> Draw("same");
+  c -> Print((folderName+"g_recHitE_sigma_vsAbsEta.png").c_str(),"png");
+  delete c;
+  leg = NULL;
+  if(type == "DAMC"){
+    g_recHitE_sigma_vsAbsEta[0]->Write("g_recHitE_sigma_vsAbsEta_DA"); 
+    g_recHitE_sigma_vsAbsEta[1]->Write("g_recHitE_sigma_vsAbsEta_MC"); 
+  }
+  g_recHitE_sigma_vsAbsEta_PU0[1]->Write("g_recHitE_sigma_vsAbsEta_PU0_MC");
+  g_recHitE_sigma_vsAbsEta_PU70[1]->Write("g_recHitE_sigma_vsAbsEta_PU70_MC");
+  g_recHitE_sigma_vsAbsEta_PU140[1]->Write("g_recHitE_sigma_vsAbsEta_PU140_MC");
+  g_recHitE_sigma_vsAbsEtans[0]->Write("g_recHitE_sigma_vsAbsEtans_DA");
+  g_recHitE_sigma_vsAbsEtans[1]->Write("g_recHitE_sigma_vsAbsEtans_MC");
+  g_recHitE_sigmaAt70PU_vsAbsEtans[0]->Write("g_recHitE_sigmaAt70PU_vsAbsEtans_DA");
+  g_recHitE_sigmaAt70PU_vsAbsEtans[1]->Write("g_recHitE_sigmaAt70PU_vsAbsEtans_MC");
+  g_recHitE_sigmaAt140PU_vsAbsEtans[0]->Write("g_recHitE_sigmaAt140PU_vsAbsEtans_DA");
+  g_recHitE_sigmaAt140PU_vsAbsEtans[1]->Write("g_recHitE_sigmaAt140PU_vsAbsEtans_MC");
+
   
   sprintf(canvasName,"c_recHitE_RMSAt0PU_vsIRing");
   c = new TCanvas(canvasName,canvasName);
@@ -1024,6 +1433,30 @@ sprintf(histoName,"%s/EE/plots_vs_nPU_and_absEta/h_recHitE_nPU139.0-141.0__absEt
   c -> Print((folderName+"g_recHitE_RMSAt0PU_vsIRing.png").c_str(),"png");
   delete c;
   leg = NULL;  
+  g_recHitE_RMSAt0PU_vsIRing[0]->Write("g_recHitE_RMSAt0PU_vsIRing_DA");
+  g_recHitE_RMSAt0PU_vsIRing[1]->Write("g_recHitE_RMSAt0PU_vsIRing_MC");
+
+
+  
+  sprintf(canvasName,"c_recHitE_sigmaAt0PU_vsAbsEta");
+  c = new TCanvas(canvasName,canvasName);
+  c -> SetGridx();
+  c -> SetGridy();
+  g_recHitE_sigmaAt0PU_vsAbsEta[0] -> Draw("AP");
+  g_recHitE_sigmaAt0PU_vsAbsEta[1] -> Draw("P,same");
+  SetGraphStyle(g_recHitE_sigmaAt0PU_vsAbsEta[0],"DA","EBEE","vsAbsEta","recHitE_sigmaAt0PU",&leg);
+  SetGraphStyle(g_recHitE_sigmaAt0PU_vsAbsEta[1],"MC","EBEE","vsAbsEta","recHitE_sigmaAt0PU",&leg);
+  gNuGun_recHitE_RMS_vsIRing -> Draw("L,same");
+  leg -> Draw("same");
+  c -> Print((folderName+"g_recHitE_sigmaAt0PU_vsAbsEta.png").c_str(),"png");
+  delete c;
+  leg = NULL;  
+  g_recHitE_sigmaAt0PU_vsAbsEta[0]->Write("g_recHitE_sigmaAt0PU_vsAbsEta_DA");
+  g_recHitE_sigmaAt0PU_vsAbsEta[1]->Write("g_recHitE_sigmaAt0PU_vsAbsEta_MC");
+  g_recHitE_sigmaAt70PU_vsAbsEta[0]->Write("g_recHitE_sigmaAt70PU_vsAbsEta_DA");
+  g_recHitE_sigmaAt70PU_vsAbsEta[1]->Write("g_recHitE_sigmaAt70PU_vsAbsEta_MC");
+  g_recHitE_sigmaAt140PU_vsAbsEta[0]->Write("g_recHitE_sigmaAt140PU_vsAbsEta_DA");
+  g_recHitE_sigmaAt140PU_vsAbsEta[1]->Write("g_recHitE_sigmaAt140PU_vsAbsEta_MC");
 
   //rms
   sprintf(canvasName,"c_recHitE_RMS_vsEta");
@@ -1038,6 +1471,9 @@ sprintf(histoName,"%s/EE/plots_vs_nPU_and_absEta/h_recHitE_nPU139.0-141.0__absEt
   c -> Print((folderName+"g_recHitE_RMS_vsEta.png").c_str(),"png");
   delete c;
   leg = NULL;
+  g_recHitE_RMS_vsEta[0]->Write("g_recHitE_RMS_vsEta_DA");
+  g_recHitE_RMS_vsEta[1]->Write("g_recHitE_RMS_vsEta_MC");
+
 
   sprintf(canvasName,"c_recHitE_RMS_vsAbsEta");
   c = new TCanvas(canvasName,canvasName);
@@ -1051,6 +1487,8 @@ sprintf(histoName,"%s/EE/plots_vs_nPU_and_absEta/h_recHitE_nPU139.0-141.0__absEt
   c -> Print((folderName+"g_recHitE_RMS_vsAbsEta.png").c_str(),"png");
   delete c;
   leg = NULL;
+  g_recHitE_RMS_vsAbsEta[0]->Write("g_recHitE_RMS_vsAbsEta_DA");
+  g_recHitE_RMS_vsAbsEta[1]->Write("g_recHitE_RMS_vsAbsEta_MC");
 
   sprintf(canvasName,"c_recHitE_RMS_vsEta_vsPU");
   c = new TCanvas(canvasName,canvasName);
@@ -1066,6 +1504,9 @@ sprintf(histoName,"%s/EE/plots_vs_nPU_and_absEta/h_recHitE_nPU139.0-141.0__absEt
   c -> Print((folderName+"g_recHitE_RMS_vsEta_vsPU.png").c_str(),"png");
   delete c;
   leg = NULL;
+  g_recHitE_RMS_vsEta_PU0[1]->Write("g_recHitE_RMS_vsEta_PU0_MC");
+  g_recHitE_RMS_vsEta_PU70[1]->Write("g_recHitE_RMS_vsEta_PU70_MC");
+  g_recHitE_RMS_vsEta_PU140[1]->Write("g_recHitE_RMS_vsEta_PU140_MC");
 
   sprintf(canvasName,"c_recHitE_RMS_vsAbsEta_vsPU");
   c = new TCanvas(canvasName,canvasName);
@@ -1078,9 +1519,12 @@ sprintf(histoName,"%s/EE/plots_vs_nPU_and_absEta/h_recHitE_nPU139.0-141.0__absEt
   SetGraphStyle(g_recHitE_RMS_vsAbsEta_PU70[1],"MC_PU70","EBEE","vsAbsEta","recHitE_RMS",&leg);
   SetGraphStyle(g_recHitE_RMS_vsAbsEta_PU140[1],"MC_PU140","EBEE","vsAbsEta","recHitE_RMS",&leg);
   leg -> Draw("same");
-  c -> Print((folderName+"g_recHitE_RMS_vsAbsEta_vsPU.png").c_str(),"png");
+  c -> Print((folderName+"c_recHitE_RMS_vsAbsEta_vsPU.png").c_str(),"png");
   delete c;
   leg = NULL;
+  g_recHitE_RMS_vsAbsEta_PU0[1]->Write("g_recHitE_RMS_vsAbsEta_PU0_MC");
+  g_recHitE_RMS_vsAbsEta_PU70[1]->Write("g_recHitE_RMS_vsAbsEta_PU70_MC");
+  g_recHitE_RMS_vsAbsEta_PU140[1]->Write("g_recHitE_RMS_vsAbsEta_PU140_MC");
 
   /// sigma
   sprintf(canvasName,"c_recHitE_sigma_vsEta");
@@ -1095,9 +1539,12 @@ sprintf(histoName,"%s/EE/plots_vs_nPU_and_absEta/h_recHitE_nPU139.0-141.0__absEt
   c -> Print((folderName+"g_recHitE_sigma_vsEta.png").c_str(),"png");
   delete c;
   leg = NULL;
+  g_recHitE_sigma_vsEta[0]->Write("g_recHitE_sigma_vsEta_DA");
+  g_recHitE_sigma_vsEta[1]->Write("g_recHitE_sigma_vsEta_MC");
 
-  sprintf(canvasName,"c_recHitE_sigma_vsEta");
+  sprintf(canvasName,"c_recHitE_sigma_vsEta_log");
   c = new TCanvas(canvasName,canvasName);
+  c->SetLogy();
   c -> SetGridx();
   c -> SetGridy();
   g_recHitE_sigma_vsEta[0] -> Draw("AP");
@@ -1105,7 +1552,7 @@ sprintf(histoName,"%s/EE/plots_vs_nPU_and_absEta/h_recHitE_nPU139.0-141.0__absEt
   SetGraphStyle(g_recHitE_sigma_vsEta[0],"DA","EBEE","vsEta","recHitE_sigma",&leg);
   SetGraphStyle(g_recHitE_sigma_vsEta[1],"MC","EBEE","vsEta","recHitE_sigma",&leg);
   leg -> Draw("same");
-  c -> Print((folderName+"g_recHitE_sigma_vsEta.png").c_str(),"png");
+  c -> Print((folderName+"g_recHitE_sigma_vsEta_log.png").c_str(),"png");
   delete c;
   leg = NULL;
 
@@ -1121,6 +1568,9 @@ sprintf(histoName,"%s/EE/plots_vs_nPU_and_absEta/h_recHitE_nPU139.0-141.0__absEt
   c -> Print((folderName+"g_recHitE_sigma_vsAbsEta.png").c_str(),"png");
   delete c;
   leg = NULL;
+  g_recHitE_sigma_vsAbsEta[0]->Write("g_recHitE_sigma_vsAbsEta_DA");
+  g_recHitE_sigma_vsAbsEta[1]->Write("g_recHitE_sigma_vsAbsEta_MC");
+
 
   sprintf(canvasName,"c_recHitE_sigma_vsEta_vsPU");
   c = new TCanvas(canvasName,canvasName);
@@ -1136,7 +1586,58 @@ sprintf(histoName,"%s/EE/plots_vs_nPU_and_absEta/h_recHitE_nPU139.0-141.0__absEt
   c -> Print((folderName+"g_recHitE_sigma_vsEta_vsPU.png").c_str(),"png");
   delete c;
   leg = NULL;
+  g_recHitE_sigma_vsEta_PU0[1]->Write("g_recHitE_sigma_vsEta_PU0_MC");
+  g_recHitE_sigma_vsEta_PU70[1]->Write("g_recHitE_sigma_vsEta_PU70_MC");
+  g_recHitE_sigma_vsEta_PU140[1]->Write("g_recHitE_sigma_vsEta_PU140_MC");
 
+
+  sprintf(canvasName,"c_recHitE_RMS_vsAbsEta_vsPUns");
+  c = new TCanvas(canvasName,canvasName);
+  c -> SetGridx();
+  c -> SetGridy();
+  g_recHitE_RMS_vsAbsEta_PU0[1] -> Draw("AP");
+  g_recHitE_RMS_vsAbsEta_PU70[1] -> Draw("P,same");
+  g_recHitE_RMS_vsAbsEta_PU140[1] -> Draw("P,same");
+  g_recHitE_RMS_vsAbsEta_PU70ns[1] -> Draw("P,same");
+  g_recHitE_RMS_vsAbsEta_PU140ns[1] -> Draw("P,same");
+  SetGraphStyle(g_recHitE_RMS_vsAbsEta_PU0[1],"MC_PU0","EBEE","vsAbsEta","recHitE_RMS",&leg);
+  SetGraphStyle(g_recHitE_RMS_vsAbsEta_PU70[1],"MC_PU70","EBEE","vsAbsEta","recHitE_RMS",&leg);
+  SetGraphStyle(g_recHitE_RMS_vsAbsEta_PU140[1],"MC_PU140","EBEE","vsAbsEta","recHitE_RMS",&leg);
+  SetGraphStyle(g_recHitE_RMS_vsAbsEta_PU70ns[1],"MC_PU70ns","EBEE","vsAbsEta","recHitE_RMS",&leg);
+  SetGraphStyle(g_recHitE_RMS_vsAbsEta_PU140ns[1],"MC_PU140ns","EBEE","vsAbsEta","recHitE_RMS",&leg);
+  leg -> Draw("same");
+  c -> Print((folderName+"c_recHitE_RMS_vsAbsEta_vsPUns.png").c_str(),"png");
+  delete c;
+  leg = NULL;
+  g_recHitE_RMS_vsAbsEta_PU0[1]->Write("g_recHitE_RMS_vsAbsEta_PU0_MC");
+  g_recHitE_RMS_vsAbsEta_PU70[1]->Write("g_recHitE_RMS_vsAbsEta_PU70_MC");
+  g_recHitE_RMS_vsAbsEta_PU140[1]->Write("g_recHitE_RMS_vsAbsEta_PU140_MC");
+  g_recHitE_RMS_vsAbsEta_PU70ns[1]->Write("g_recHitE_RMS_vsAbsEta_PU70ns_MC");
+  g_recHitE_RMS_vsAbsEta_PU140ns[1]->Write("g_recHitE_RMS_vsAbsEta_PU140ns_MC");
+
+
+  sprintf(canvasName,"c_recHitE_RMS_vsAbsEta_vsPUns_log");
+  c = new TCanvas(canvasName,canvasName);
+  c->SetLogy();
+  c -> SetGridx();
+  c -> SetGridy();
+  g_recHitE_RMS_vsAbsEta_PU0[1] -> Draw("AP");
+  g_recHitE_RMS_vsAbsEta_PU70[1] -> Draw("P,same");
+  g_recHitE_RMS_vsAbsEta_PU140[1] -> Draw("P,same");
+  g_recHitE_RMS_vsAbsEta_PU70ns[1] -> Draw("P,same");
+  g_recHitE_RMS_vsAbsEta_PU140ns[1] -> Draw("P,same");
+  SetGraphStyle(g_recHitE_RMS_vsAbsEta_PU0[1],"MC_PU0","EBEE","vsAbsEta","recHitE_RMS",&leg);
+  SetGraphStyle(g_recHitE_RMS_vsAbsEta_PU70[1],"MC_PU70","EBEE","vsAbsEta","recHitE_RMS",&leg);
+  SetGraphStyle(g_recHitE_RMS_vsAbsEta_PU140[1],"MC_PU140","EBEE","vsAbsEta","recHitE_RMS",&leg);
+  SetGraphStyle(g_recHitE_RMS_vsAbsEta_PU70ns[1],"MC_PU70ns","EBEE","vsAbsEta","recHitE_RMS",&leg);
+  SetGraphStyle(g_recHitE_RMS_vsAbsEta_PU140ns[1],"MC_PU140ns","EBEE","vsAbsEta","recHitE_RMS",&leg);
+  leg -> Draw("same");
+  c -> Print((folderName+"c_recHitE_RMS_vsAbsEta_vsPUns_log.png").c_str(),"png");
+  delete c;
+  leg = NULL;
+
+
+  /////////////////
   sprintf(canvasName,"c_recHitE_sigma_vsAbsEta_vsPU");
   c = new TCanvas(canvasName,canvasName);
   c -> SetGridx();
@@ -1155,6 +1656,12 @@ sprintf(histoName,"%s/EE/plots_vs_nPU_and_absEta/h_recHitE_nPU139.0-141.0__absEt
   c -> Print((folderName+"g_recHitE_sigma_vsAbsEta_vsPU.png").c_str(),"png");
   delete c;
   leg = NULL;
+  g_recHitE_sigma_vsAbsEta_PU0[1]->Write("g_recHitE_sigma_vsAbsEta_PU0_MC");
+  g_recHitE_sigma_vsAbsEta_PU70[1]->Write("g_recHitE_sigma_vsAbsEta_PU70_MC");
+  g_recHitE_sigma_vsAbsEta_PU140[1]->Write("g_recHitE_sigma_vsAbsEta_PU140_MC");
+  g_recHitE_sigma_vsAbsEta_PU70ns[1]->Write("g_recHitE_sigma_vsAbsEta_PU70ns_MC");
+  g_recHitE_sigma_vsAbsEta_PU140ns[1]->Write("g_recHitE_sigma_vsAbsEta_PU140ns_MC");
+
 
   sprintf(canvasName,"c_recHitE_sigma_vsAbsEta_vsPU_log");
   c = new TCanvas(canvasName,canvasName);
@@ -1175,6 +1682,48 @@ sprintf(histoName,"%s/EE/plots_vs_nPU_and_absEta/h_recHitE_nPU139.0-141.0__absEt
   c -> Print((folderName+"g_recHitE_sigma_vsAbsEta_vsPU_log.png").c_str(),"png");
   delete c;
   leg = NULL;
+
+
+  sprintf(canvasName,"c_recHitE_sigma_vsAbsEta_vsPU_comparison_log");
+  c = new TCanvas(canvasName,canvasName);
+  c->SetLogy();
+  c -> SetGridx();
+  c -> SetGridy();
+  ax_PU70->Draw("AL");
+  ax_PU140->Draw("L,same");
+  g_recHitE_sigma_vsAbsEta_PU70ns[1] -> Draw("P,same");
+  g_recHitE_sigma_vsAbsEta_PU140ns[1] -> Draw("P,same");
+  SetGraphStyle(ax_PU70,"MC_PU70_ax","EBEE","vsAbsEta","recHitE_sigma",&leg);
+  SetGraphStyle(ax_PU140,"MC_PU140_ax","EBEE","vsAbsEta","recHitE_sigma",&leg);
+  SetGraphStyle(g_recHitE_sigma_vsAbsEta_PU70ns[1],"MC_PU70nsc","EBEE","vsAbsEta","recHitE_sigma",&leg);
+  SetGraphStyle(g_recHitE_sigma_vsAbsEta_PU140ns[1],"MC_PU140nsc","EBEE","vsAbsEta","recHitE_sigma",&leg);
+  ax_PU70->SetMaximum(10.);
+  ax_PU140->SetMaximum(10.);
+  leg -> Draw("same");
+  c -> Print((folderName+"g_recHitE_sigma_vsAbsEta_vsPU_comparison_log.png").c_str(),"png");
+  delete c;
+  leg = NULL;
+
+  sprintf(canvasName,"c_recHitE_sigma_vsAbsEta_vsPU_comparison");
+  c = new TCanvas(canvasName,canvasName);
+  c -> SetGridx();
+  c -> SetGridy();
+  ax_PU70->Draw("AP");
+  ax_PU140->Draw("P,same");
+  g_recHitE_sigma_vsAbsEta_PU70ns[1] -> Draw("P,same");
+  g_recHitE_sigma_vsAbsEta_PU140ns[1] -> Draw("P,same");
+  SetGraphStyle(ax_PU70,"MC_PU70_ax","EBEE","vsAbsEta","recHitE_sigma",&leg);
+  SetGraphStyle(ax_PU140,"MC_PU140_ax","EBEE","vsAbsEta","recHitE_sigma",&leg);
+  SetGraphStyle(g_recHitE_sigma_vsAbsEta_PU70ns[1],"MC_PU70nsc","EBEE","vsAbsEta","recHitE_sigma",&leg);
+  SetGraphStyle(g_recHitE_sigma_vsAbsEta_PU140ns[1],"MC_PU140nsc","EBEE","vsAbsEta","recHitE_sigma",&leg);
+  ax_PU70->SetMaximum(10.);
+  ax_PU140->SetMaximum(10.);
+  leg -> Draw("same");
+  c -> Print((folderName+"g_recHitE_sigma_vsAbsEta_vsPU_comparison.png").c_str(),"png");
+  delete c;
+  leg = NULL;
+
+  outPlots.Close();
 }
 
 
@@ -1308,7 +1857,7 @@ void SetGraphStyle(TGraphErrors* g, const std::string& dataset, const std::strin
 {
   if( (*leg) == NULL )
   {
-    (*leg) = new TLegend(0.35,0.75,0.55,0.95,NULL,"brNDC");
+    (*leg) = new TLegend(0.25,0.75,0.45,0.95,NULL,"brNDC");
     (*leg)->SetTextSize(0.04);
     (*leg)->SetLineWidth(0);
     (*leg)->SetLineColor(kWhite);
@@ -1347,7 +1896,7 @@ void SetGraphStyle(TGraphErrors* g, const std::string& dataset, const std::strin
   }
   if( dataset == "MC_PU70" )
   {
-    (*leg) -> AddEntry(g,"MC PU70 + noise PU0","P");
+    (*leg) -> AddEntry(g,"MC PU70 + noise (0 ageing)","P");
     
     g -> SetLineColor(kRed);
     g -> SetMarkerColor(kRed);
@@ -1356,7 +1905,7 @@ void SetGraphStyle(TGraphErrors* g, const std::string& dataset, const std::strin
   }
   if( dataset == "MC_PU140" )
   {
-    (*leg) -> AddEntry(g,"MC PU140 + noise PU0","P");
+    (*leg) -> AddEntry(g,"MC PU140 + noise (0 ageing)","P");
     
     g -> SetLineColor(kBlue);
     g -> SetMarkerColor(kBlue);
@@ -1365,7 +1914,7 @@ void SetGraphStyle(TGraphErrors* g, const std::string& dataset, const std::strin
   }
   if( dataset == "MC_PU70ns" )
   {
-    (*leg) -> AddEntry(g,"MC PU70","P");
+    (*leg) -> AddEntry(g,"MC PU70 only","P");
     
     g -> SetLineColor(kRed);
     g -> SetMarkerColor(kRed);
@@ -1374,11 +1923,51 @@ void SetGraphStyle(TGraphErrors* g, const std::string& dataset, const std::strin
   }
   if( dataset == "MC_PU140ns" )
   {
-    (*leg) -> AddEntry(g,"MC PU140","P");
+    (*leg) -> AddEntry(g,"MC PU140 only","P");
     
     g -> SetLineColor(kBlue);
     g -> SetMarkerColor(kBlue);
     g -> SetMarkerStyle(25);
+    g -> SetMarkerSize(1.);
+  }
+
+  if( dataset == "MC_PU70nsc" )
+  {
+    (*leg) -> AddEntry(g,"MC PU70 only","P");
+    
+    g -> SetLineColor(kRed);
+    g -> SetMarkerColor(kRed);
+    g -> SetMarkerStyle(20);
+    g -> SetMarkerSize(1.);
+  }
+  if( dataset == "MC_PU140nsc" )
+  {
+    (*leg) -> AddEntry(g,"MC PU140 only","P");
+    
+    g -> SetLineColor(kBlue);
+    g -> SetMarkerColor(kBlue);
+    g -> SetMarkerStyle(20);
+    g -> SetMarkerSize(1.);
+  }
+
+  if( dataset == "MC_PU70_ax" )
+  {
+    (*leg) -> AddEntry(g,"MC PU70 (alexey)","L");
+    
+    g -> SetLineColor(kRed);
+    g -> SetLineWidth(2);
+    g -> SetMarkerColor(kRed);
+    g -> SetMarkerStyle(20);
+    g -> SetMarkerSize(1.);
+  }
+  if( dataset == "MC_PU140_ax" )
+  {
+    (*leg) -> AddEntry(g,"MC PU140 (alexey)","L");
+    
+    g -> SetLineColor(kBlue);
+    g -> SetLineWidth(2);
+    g -> SetMarkerColor(kBlue);
+    g -> SetMarkerStyle(20);
     g -> SetMarkerSize(1.);
   }
 
@@ -1388,16 +1977,17 @@ void SetGraphStyle(TGraphErrors* g, const std::string& dataset, const std::strin
     if( dataset == "DA" )
     {
       g -> GetXaxis() -> SetRangeUser(0.,200.);
+      if(type == "DAMC")       g -> GetXaxis() -> SetRangeUser(0.,50.);
       g -> GetXaxis() -> SetTitle("#LT N_{PU} #GT");
       if( region == "EB" )
       {
         g -> SetMinimum(0.000);
-        g -> SetMaximum(0.150);
+        g -> SetMaximum(0.40);
       }
       if( region == "EE" )
       {
         g -> SetMinimum(0.000);
-        g -> SetMaximum(1.000);
+        g -> SetMaximum(1.500);
       }
       
       TF1* f_prefit_DA = new TF1("f_prefit_DA","[0]+[1]*x",-0.5,199.5);
@@ -1539,6 +2129,7 @@ void SetGraphStyle(TGraphErrors* g, const std::string& dataset, const std::strin
       */
     }
   }
+
   
   if( type2 == "recHitE_RMS" )
   {
@@ -1569,13 +2160,14 @@ float GetEffectiveSigma(TH1F* h){
 
   double TotEvents = h->Integral(1, h->GetNbinsX()-1);
   float LocEvents = 0.;
-
   int binI = h->FindBin(h->GetMean());
   int binF = h->GetNbinsX()-1;
+
   bool keepGoing = false;
 
+  /*
   for(int jBin=binI; jBin>0; --jBin){
-    //    std::cout << " jBin = " << jBin << std::endl;
+
     LocEvents = 0.;
     keepGoing = false;
     for(int iBin=jBin; iBin<binF; ++iBin){
@@ -1602,8 +2194,30 @@ float GetEffectiveSigma(TH1F* h){
     if(keepGoing == false) break;
   }
 
-//   std::cout << " >>> binI = " << binI << std::endl;
-//   std::cout << " >>> binF = " << binF << std::endl;
+  */
+
+  for(int jBin=binI; jBin>0; --jBin){
+    LocEvents = 0.;
+    keepGoing = false;
+    for(int iBin=jBin; iBin<binF; ++iBin){
+      LocEvents += h->GetBinContent(iBin);
+      if(LocEvents/TotEvents >= 0.68) {
+	if(iBin-jBin < binF-binI) {
+	  binF = iBin;
+	  binI = jBin;
+	  keepGoing = true;
+	}
+        break;
+      }
+      if(iBin == binF-1 && binF == h->GetNbinsX()-1){
+	keepGoing = true;
+	--binI;
+      }
+      if(iBin == binF-1 && binF != h->GetNbinsX()-1) break;
+    }
+    if(keepGoing == false) break;
+  }
+
 
   float sigma = (h->GetBinCenter(binF) - h->GetBinCenter(binI))/2.;
   //  std::cout << " >>> sigma" << sigma << std::endl;
