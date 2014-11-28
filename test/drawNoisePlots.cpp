@@ -17,11 +17,10 @@
 #include "TArrow.h"
 #include "TLegend.h"
 
+// std::string label  = "Upgrade_NoAging_PU0-140";
+// std::string type = "MCMC";
 
-//std::string label  = "Upgrade_NoAging_PU0-140";
-//std::string type = "MCMC";
-
-std::string label  = "runD_DA-MC";
+std::string label  = "runABCD_DA-MC_added";
 std::string type = "DAMC";
 
 std::string label2 = "MC-NuGun-runAB-noPU";
@@ -32,7 +31,8 @@ int rebin = 120;
 void SetHistoStyle(TH1F* h, const std::string& dataset, const std::string& region, const std::string& type, TLegend** leg, const bool& log = false);
 void SetGraphStyle(TGraphErrors* g, const std::string& dataset, const std::string& region, const std::string& type, const std::string& type2, TLegend** leg);
 float GetEffectiveSigma(TH1F* h);
-
+void GetEffectiveSigma(TH1F* h, double& E1, double& E2);
+void FillHistoRMS(TH1F* histo, float rms, float mean);
 
 int main()
 {
@@ -57,7 +57,17 @@ int main()
   TGraphErrors* ax_PU140 = (TGraphErrors*)ax->Get("g_140");
 
   TFile* f  = TFile::Open((baseDir+"/output/studyNoise_" +label +".root").c_str(),"READ");
-  f -> cd();
+  f->cd();
+
+  TFile* fAB  = TFile::Open((baseDir+"/output/studyNoise_runAB_DA-MC.root").c_str(), "READ");
+  fAB->cd();
+
+  TFile* fC  = TFile::Open((baseDir+"/output/studyNoise_runC_DA-MC.root").c_str(), "READ");
+  fC->cd();
+
+  TFile* fD  = TFile::Open((baseDir+"/output/studyNoise_runD_DA-MC.root").c_str(), "READ");
+  //  TFile* fD  = TFile::Open((baseDir+"/output/ROOT_OK/studyNoise_runD_DA-MC.root").c_str(), "READ");
+  fD->cd();
 
 
   std::string folderName = baseDir+"/output/noisePlots__" + label + "/";
@@ -254,6 +264,10 @@ int main()
 
 	std::cout << "histoName = " << std::string(histoName) << std::endl;
         TH1F* histo = (TH1F*)( f->Get(histoName) );
+	//        TH1F* histoRMS;
+        TH1F* histoRMS_AB;
+        TH1F* histoRMS_C;
+        TH1F* histoRMS_D;
         float binMean    = histo -> GetMean();
         float binRMS     = histo -> GetRMS();
         float binMeanErr = histo -> GetMeanError();
@@ -269,8 +283,40 @@ int main()
         if( histo->GetEntries() < 30 ) continue;
         histo -> Rebin(rebin);
         
-	// 	std::cout << " >>> binMean = " << binMean << std::endl;
-	//	if(binMean == 140) histo -> Rebin(2);
+        sprintf(histoName,"%s/%s/plots_vs_nPU/h_recHitE_sigmanPU%2.1f-%2.1f_%s_%s",dataset.c_str(),region.c_str(),
+		                                                                    binLowEdge,binHigEdge,
+                                                                        	    region.c_str(),dataset.c_str());
+
+	std::cout << "histoName = " << std::string(histoName) << std::endl;
+	//histoRMS = (TH1F*)( f->Get(histoName) );
+	histoRMS_AB = (TH1F*)( fAB->Get(histoName) );
+	histoRMS_C = (TH1F*)( fC->Get(histoName) );
+	histoRMS_D = (TH1F*)( fD->Get(histoName) );
+	// 	FillHistoRMS(histoRMS, histo->GetRMS(), histo->GetMean() );
+	// 	std::cout << " histoRMS = " << histo->GetRMS() << " effective = " << GetEffectiveSigma(histo) << std::endl;
+
+	double E1 = (histoRMS_AB->GetBinContent(2) + histoRMS_C->GetBinContent(2) + histoRMS_D->GetBinContent(2))/3.; 
+	double E2 = (histoRMS_AB->GetBinContent(3) + histoRMS_C->GetBinContent(3) + histoRMS_D->GetBinContent(3))/3.; 
+	double Eabcd = (histoRMS_AB->GetBinContent(1) + histoRMS_C->GetBinContent(1) + histoRMS_D->GetBinContent(1))/3.; 
+	double EabcdRMS = sqrt( (pow(histoRMS_AB->GetBinContent(1), 2) + pow(histoRMS_C->GetBinContent(1), 2) + pow(histoRMS_D->GetBinContent(1), 2))/3. -
+				pow(Eabcd, 2) ); 
+	double R1 = histo->GetMean()-histo->GetRMS();
+	double R2 = histo->GetMean()+histo->GetRMS();
+	//	GetEffectiveSigma(histo, E1, E2);
+
+// 	std::cout << " E1 = " << E1 << " E2 = " << E2 << " E2-E1 = " << E2-E1 << " sig = " << histoRMS->GetBinContent(1) << std::endl;
+// 	std::cout << " R1 = " << R1 << " R2 = " << R2 << " rms = " << histo->GetRMS() << std::endl;
+	TArrow* line1 = new TArrow(E1,0.000,E1,0.500); 
+	line1->SetLineColor(kBlue); 	line1->SetLineStyle(2); line1->SetLineWidth(2);
+	TArrow* line2 = new TArrow(E2,0.000,E2,0.500);
+	line2->SetLineColor(kBlue); 	line2->SetLineStyle(2); line2->SetLineWidth(2);
+
+	TArrow* line1r = new TArrow(R1,0.000,R1,0.500); 
+	line1r->SetLineColor(kYellow); 	line1r->SetLineWidth(2);
+	TArrow* line2r = new TArrow(R2,0.000,R2,0.500);
+	line2r->SetLineColor(kYellow); 	line2r->SetLineWidth(2);
+	
+
         
         TF1* f_gaus;
         if( region == "EB" ) f_gaus = new TF1("f_gaus","[0]*exp(-1.*(x-[1])*(x-[1])/2/[2]/[2])",-0.10,0.10);
@@ -283,6 +329,11 @@ int main()
         SetHistoStyle(histo,dataset,region,"recHitE",&leg);
         histo -> Draw();
         f_gaus -> Draw("same");
+	//	histoRMS->Draw("hist, same");
+	line1 -> Draw("same"); 
+	line2 -> Draw("same");     
+	line1r -> Draw("same"); 
+	line2r -> Draw("same");     
         c_temp -> Print(fileNameString1.c_str(),"pdf");
         delete c_temp;
         
@@ -292,36 +343,35 @@ int main()
         SetHistoStyle(histo,dataset,region,"recHitE",&leg,true);
         histo -> Draw();
         f_gaus -> Draw("same");
+	//	histoRMS->Draw("hist, same");
+	line1 -> Draw("same"); 
+	line2 -> Draw("same");     
+	line1r -> Draw("same"); 
+	line2r -> Draw("same");     
         c_temp -> Print(fileNameString2.c_str(),"pdf");
         delete c_temp;        
         
         if( region == "EB" )
         {
           gEB_recHitE_RMS_vsNPU[datasetIt] -> SetPoint(point,binMean,histo->GetRMS());
-	  //         gEB_recHitE_RMS_vsNPU[datasetIt] -> SetPointError(point,binMeanErr,histo->GetRMSError());
           gEB_recHitE_RMS_vsNPU[datasetIt] -> SetPointError(point,binRMS,histo->GetRMSError());
-	  //	  std::cout << " binMean = " << binMean << " " << histo->GetRMS() << " " << histo->GetRMSError() << std::endl;
-          
-	  // 	  gEB_recHitE_sigma_vsNPU[datasetIt] -> SetPoint(point,binMean,histo->GetRMS());
-	  // 	  gEB_recHitE_sigma_vsNPU[datasetIt] -> SetPointError(point,binRMS,histo->GetRMSError());
 
-	  //          gEB_recHitE_sigma_vsNPU[datasetIt] -> SetPoint(point,binMean,f_gaus->GetParameter(2));
-	  //          gEB_recHitE_sigma_vsNPU[datasetIt] -> SetPointError(point,binMeanErr,f_gaus->GetParError(2));
-	  gEB_recHitE_sigma_vsNPU[datasetIt] -> SetPoint(point,binMean,GetEffectiveSigma(histo));
-	  //gEB_recHitE_sigma_vsNPU[datasetIt] -> SetPoint(point,binMean,histo->GetRMS());
-	  //std::cout << " GetEffectiveSigma(histo) = " << GetEffectiveSigma(histo) << std::endl;
-	  gEB_recHitE_sigma_vsNPU[datasetIt] -> SetPointError(point,binRMS,histo->GetRMSError());
+	  //	  gEB_recHitE_sigma_vsNPU[datasetIt] -> SetPoint(point,binMean,GetEffectiveSigma(histo));
+// 	  gEB_recHitE_sigma_vsNPU[datasetIt] -> SetPoint(point,binMean,histoRMS->GetBinContent(1));
+// 	  gEB_recHitE_sigma_vsNPU[datasetIt] -> SetPointError(point,binRMS,histo->GetRMSError());
+	  gEB_recHitE_sigma_vsNPU[datasetIt] -> SetPoint(point,binMean,Eabcd);
+	  gEB_recHitE_sigma_vsNPU[datasetIt] -> SetPointError(point,binRMS,EabcdRMS);
         }
         if( region == "EE" )
         {
           gEE_recHitE_RMS_vsNPU[datasetIt] -> SetPoint(point,binMean,histo->GetRMS());
-	  //          gEE_recHitE_RMS_vsNPU[datasetIt] -> SetPointError(point,binMeanErr,histo->GetRMSError());
           gEE_recHitE_RMS_vsNPU[datasetIt] -> SetPointError(point,binRMS,histo->GetRMSError());
           
-	  //           gEE_recHitE_sigma_vsNPU[datasetIt] -> SetPoint(point,binMean,f_gaus->GetParameter(2));
-	  //           gEE_recHitE_sigma_vsNPU[datasetIt] -> SetPointError(point,binMeanErr,f_gaus->GetParError(2));
-          gEE_recHitE_sigma_vsNPU[datasetIt] -> SetPoint(point,binMean,GetEffectiveSigma(histo));
-          gEE_recHitE_sigma_vsNPU[datasetIt] -> SetPointError(point,binRMS,histo->GetRMSError());
+	  //          gEE_recHitE_sigma_vsNPU[datasetIt] -> SetPoint(point,binMean,GetEffectiveSigma(histo));
+// 	  gEE_recHitE_sigma_vsNPU[datasetIt] -> SetPoint(point,binMean,histoRMS->GetBinContent(1));
+//           gEE_recHitE_sigma_vsNPU[datasetIt] -> SetPointError(point,binRMS,histo->GetRMSError());
+	  gEE_recHitE_sigma_vsNPU[datasetIt] -> SetPoint(point,binMean,Eabcd);
+          gEE_recHitE_sigma_vsNPU[datasetIt] -> SetPointError(point,binRMS,EabcdRMS);
         }
         delete f_gaus;
         ++point;
@@ -382,7 +432,7 @@ int main()
         histo = (TH1F*)( f->Get(histoName) );
         float binMean    = histo -> GetMean();
         float binMeanErr = histo -> GetMeanError();
-        //if( binMean < 6. || binMean > 30. ) continue;        
+        if( type == "DAMC" && (binMean < 6. || binMean > 30.) ) continue;        
         
         if( fabs(iRingBinCenter) < 86 )
           sprintf(histoName,"%s/EB/plots_vs_nPU_and_iRing/h_recHitE_nPU%2.1f-%2.1f__iRing%2.1f-%2.1f_EB_%s",dataset.c_str(),
@@ -404,6 +454,9 @@ int main()
       }
       
       TF1* f_temp = new TF1("f_temp","[0]+[1]*x",-0.5,199.5);
+      if(type == "DAMC") f_temp->SetRange(5., 30.);
+      g_temp -> Fit("f_temp","QNRS");
+      if(type == "DAMC") f_temp->SetRange(5., 100.);
       g_temp -> Fit("f_temp","QNRS");
       
       g_recHitE_RMSAt0PU_vsIRing[datasetIt] -> SetPoint(point,iRingBinCenter,f_temp->GetParameter(0));
@@ -415,7 +468,7 @@ int main()
     }
   
 
-  ///////
+    ///////
     std::cout << " >>> h_occupancy_vsAbsEta absEta " << std::endl;
     
     char cName[250];
@@ -440,17 +493,23 @@ int main()
             
       TGraphErrors* g_temp = new TGraphErrors();
       int point2 = 0;
+      std::cout << " >>> h_occupancy_vsNPU->GetNbinsX() = " << h_occupancy_vsNPU->GetNbinsX() << std::endl;
       for(int nPUBin = 1; nPUBin <= h_occupancy_vsNPU->GetNbinsX(); ++nPUBin)
       {
         float nPUBinLowEdge = h_occupancy_vsNPU -> GetBinLowEdge(nPUBin);
         float nPUBinHigEdge = h_occupancy_vsNPU -> GetBinLowEdge(nPUBin) + h_occupancy_vsNPU->GetBinWidth(nPUBin);      
         
-// 	std::cout << " >>> point = " << point << std::endl;
-// 	std::cout << " >>> point2 = " << point2 << std::endl;
 
         TH1F* histo;
+	//	TH1F* histoRMS;
+	TH1F* histoRMS_AB;
+	TH1F* histoRMS_C;
+	TH1F* histoRMS_D;
         char histoName[250];
+        char histoNameRMS[250];
         
+	std::cout << ">>>>>>>> histo definiti " << std::endl;
+
         if( fabs(iRingBinCenter) < 1.4442 )
           sprintf(histoName,"%s/EB/plots_vs_nPU_and_absEta/h_nPUDistr_nPU%2.1f-%2.1f__absEta%1.4f-%1.4f_EB_%s",dataset.c_str(),
                                                                                                              nPUBinLowEdge,nPUBinHigEdge,
@@ -461,31 +520,65 @@ int main()
                                                                                                              nPUBinLowEdge,nPUBinHigEdge,
                                                                                                              iRingBinLowEdge,iRingBinHigEdge,
                                                                                                              dataset.c_str());
+	std::cout << ">>>>>>>> f->GetName() = " << f->GetName() << std::endl;
+	std::cout << ">>>>>>>> histo->GetName() = " << std::string(histoName) << std::endl;
+
         histo = (TH1F*)( f->Get(histoName) );
         float binMean    = histo -> GetMean();
         float binMeanErr = histo -> GetMeanError();
         if(type == "DAMC" &&  (binMean < 6. || binMean > 30.) ) continue;        
         
-        if( fabs(iRingBinCenter) < 1.4442 )
+        if( fabs(iRingBinCenter) < 1.4442 ){
           sprintf(histoName,"%s/EB/plots_vs_nPU_and_absEta/h_recHitE_nPU%2.1f-%2.1f__absEta%1.4f-%1.4f_EB_%s",dataset.c_str(),
                                                                                                             nPUBinLowEdge,nPUBinHigEdge,
                                                                                                             iRingBinLowEdge,iRingBinHigEdge,
                                                                                                             dataset.c_str());        
-        else
+
+          sprintf(histoNameRMS,"%s/EB/plots_vs_nPU_and_absEta/h_recHitE_sigma_nPU%2.1f-%2.1f__absEta%1.4f-%1.4f_EB_%s",dataset.c_str(),
+                                                                                                            nPUBinLowEdge,nPUBinHigEdge,
+                                                                                                            iRingBinLowEdge,iRingBinHigEdge,
+                                                                                                            dataset.c_str());        
+	}
+        else{
           sprintf(histoName,"%s/EE/plots_vs_nPU_and_absEta/h_recHitE_nPU%2.1f-%2.1f__absEta%1.4f-%1.4f_EE_%s",dataset.c_str(),
                                                                                                             nPUBinLowEdge,nPUBinHigEdge,
                                                                                                             iRingBinLowEdge,iRingBinHigEdge,
                                                                                                             dataset.c_str());        
+          sprintf(histoNameRMS,"%s/EE/plots_vs_nPU_and_absEta/h_recHitE_sigma_nPU%2.1f-%2.1f__absEta%1.4f-%1.4f_EE_%s",dataset.c_str(),
+                                                                                                            nPUBinLowEdge,nPUBinHigEdge,
+                                                                                                            iRingBinLowEdge,iRingBinHigEdge,
+                                                                                                            dataset.c_str());        
+	}
+
         histo = (TH1F*)( f->Get(histoName) );
         if( histo->GetEntries() < 30 ) continue;
 	histo -> Rebin(rebin);
-        
-        g_temp -> SetPoint(point2,binMean,GetEffectiveSigma(histo));
-        g_temp -> SetPointError(point2,binMeanErr,histo->GetRMSError());
+
+	std::cout << ">>>>>>>> prima di histoRMS " << std::endl;
+	//	histoRMS = (TH1F*)( f->Get(histoNameRMS) );
+	histoRMS_AB = (TH1F*)( fAB->Get(histoNameRMS) );
+	histoRMS_C = (TH1F*)( fC->Get(histoNameRMS) );
+	histoRMS_D = (TH1F*)( fD->Get(histoNameRMS) );
+
+	std::cout << ">>>>>>>> histo presi " << std::endl;
+	double Eabcd = (histoRMS_AB->GetBinContent(1) + histoRMS_C->GetBinContent(1) + histoRMS_D->GetBinContent(1))/3.;
+        double EabcdRMS = sqrt( (pow(histoRMS_AB->GetBinContent(1), 2) + pow(histoRMS_C->GetBinContent(1), 2) + pow(histoRMS_D->GetBinContent(1), 2))/3. -
+                                pow(Eabcd, 2) );
+
+	std::cout << " >>> Eabcd " << Eabcd << std::endl;
+	std::cout << " >>> EabcdRMS " << EabcdRMS << std::endl;
+        g_temp -> SetPoint(point2,binMean,Eabcd);
+        g_temp -> SetPointError(point2,binMeanErr,EabcdRMS);
+
+//         g_temp -> SetPoint(point2,binMean,histoRMS->GetBinContent(1));
+//         g_temp -> SetPointError(point2,binMeanErr,histo->GetRMSError());
         ++point2;
       }
       
       TF1* f_temp = new TF1("f_temp","[0]+[1]*x",-0.5,199.5);
+      if(type == "DAMC") f_temp->SetRange(5., 30.);
+      g_temp -> Fit("f_temp","QNRS");
+      if(type == "DAMC") f_temp->SetRange(5., 100.);
       g_temp -> Fit("f_temp","QNRS");
 
 
@@ -533,6 +626,7 @@ int main()
       text -> Draw("same");
       ///////////
 
+      std::cout << ">>>>>>>> histo disegnati " << std::endl;
       c_temp -> Print(fNameString1.c_str(),"pdf");
       delete c_temp;
 
@@ -580,6 +674,7 @@ int main()
         g_recHitE_RMS_vsIRing[datasetIt] -> SetPoint(point,binCenter,histo->GetRMS());
         g_recHitE_RMS_vsIRing[datasetIt] -> SetPointError(point,0.,histo->GetRMSError());
         
+
 	//         g_recHitE_sigma_vsIRing[datasetIt] -> SetPoint(point,binCenter,f_gaus->GetParameter(2));
 	//         g_recHitE_sigma_vsIRing[datasetIt] -> SetPointError(point,0.,f_gaus->GetParError(2));
         g_recHitE_sigma_vsIRing[datasetIt] -> SetPoint(point,binCenter,GetEffectiveSigma(histo));
@@ -842,18 +937,27 @@ sprintf(histoName,"%s/EE/plots_vs_nPU_and_iRing/h_recHitE_nPU139.0-141.0__iRing%
         char histoName[50];
         sprintf(histoName,"%s/EB/plots_vs_absEta/h_recHitE_absEta%1.4f-%1.4f_EB_%s",dataset.c_str(),binLowEdge,binHigEdge,dataset.c_str());
         TH1F* histo = (TH1F*)( f->Get(histoName) );
+	sprintf(histoName,"%s/EB/plots_vs_absEta/h_recHitE_sigma_absEta%1.4f-%1.4f_EB_%s",dataset.c_str(),binLowEdge,binHigEdge,dataset.c_str());
+//         TH1F* histoRMS = (TH1F*)( f->Get(histoName) );
+	TH1F* histoRMS_AB = (TH1F*)( fAB->Get(histoName) );
+	TH1F* histoRMS_C = (TH1F*)( fC->Get(histoName) );
+	TH1F* histoRMS_D = (TH1F*)( fD->Get(histoName) );
+	std::cout << ">>>>>>>> EB prima di getBins " << std::endl;
+	double Eabcd = (histoRMS_AB->GetBinContent(1) + histoRMS_C->GetBinContent(1) + histoRMS_D->GetBinContent(1))/3.;
+	double EabcdRMS = sqrt( (pow(histoRMS_AB->GetBinContent(1), 2) + pow(histoRMS_C->GetBinContent(1), 2) + pow(histoRMS_D->GetBinContent(1), 2))/3. -
+				pow(Eabcd, 2) );
+	std::cout << ">>>>>>>> EB dopo getBins " << std::endl;
         if( histo->GetEntries() < 30 ) continue;
         histo -> Rebin(rebin);
         
         g_recHitE_RMS_vsAbsEta[datasetIt] -> SetPoint(point,binCenter,histo->GetRMS());
         g_recHitE_RMS_vsAbsEta[datasetIt] -> SetPointError(point,0.,histo->GetRMSError());
         
-	//	std::cout << " >>> all - |eta| << " << binLowEdge << " " << binHigEdge << " " << GetEffectiveSigma(histo) << std::endl;
-	float sigmaPUContrib = GetEffectiveSigma(histo);
-	float sigmaPUContribE = histo->GetRMSError();
+	float sigmaPUContrib = Eabcd; //histoRMS->GetBinContent(1);
+	float sigmaPUContribE = EabcdRMS; //histo->GetRMSError();
 	float sigmaPUContrib2 = pow(sigmaPUContrib, 2);
         g_recHitE_sigma_vsAbsEta[datasetIt] -> SetPoint(point,binCenter, sigmaPUContrib);
-        g_recHitE_sigma_vsAbsEta[datasetIt] -> SetPointError(point,0.,histo->GetRMSError());
+        g_recHitE_sigma_vsAbsEta[datasetIt] -> SetPointError(point,0.,sigmaPUContribE);
         
 	double x, y;
 	float sigmaAt0PUPUContrib = g_recHitE_sigmaAt0PU_vsAbsEta[datasetIt]->GetPoint(point, x, y);
@@ -864,7 +968,8 @@ sprintf(histoName,"%s/EE/plots_vs_nPU_and_iRing/h_recHitE_nPU139.0-141.0__iRing%
 	double denE = sigmaPUContrib2 - y*y;
 	//	g_recHitE_sigma_vsAbsEtans[datasetIt] -> SetPointError(point,0., sqrt(numE/denE));
 	//	g_recHitE_sigma_vsAbsEtans[datasetIt] -> SetPointError(point,0., 0.);
-	g_recHitE_sigma_vsAbsEtans[datasetIt] -> SetPointError(point,0., histo->GetRMSError());
+	g_recHitE_sigma_vsAbsEtans[datasetIt] -> SetPointError(point,0., sigmaPUContribE);
+	std::cout << ">>>>>>>> EB error su sigma = " << sigmaPUContribE << " at PU0 = " << ey << std::endl;
 
 	double xp, yp;
 	float sigmaAt70PUPUContrib = g_recHitE_sigmaAt70PU_vsAbsEta[datasetIt]->GetPoint(point, xp, yp);
@@ -890,11 +995,22 @@ sprintf(histoName,"%s/EE/plots_vs_nPU_and_iRing/h_recHitE_nPU139.0-141.0__iRing%
 
 
 	delete histo;
+	delete histoRMS_AB;
+	delete histoRMS_C;
+	delete histoRMS_D;
 
 	if(type == "MCMC"){
 	//PU0
   sprintf(histoName,"%s/EB/plots_vs_nPU_and_absEta/h_recHitE_nPU-1.0-1.0__absEta%1.4f-%1.4f_EB_%s",dataset.c_str(),binLowEdge,binHigEdge,dataset.c_str());
         histo = (TH1F*)( f->Get(histoName) );
+sprintf(histoName,"%s/EB/plots_vs_nPU_and_absEta/h_recHitE_sigma_nPU-1.0-1.0__absEta%1.4f-%1.4f_EB_%s",dataset.c_str(),binLowEdge,binHigEdge,dataset.c_str());
+//        TH1F* histoRMS = (TH1F*)( f->Get(histoName) );
+          histoRMS_AB = (TH1F*)( fAB->Get(histoName) );
+	  histoRMS_C = (TH1F*)( fC->Get(histoName) );
+	  histoRMS_D = (TH1F*)( fD->Get(histoName) );
+	  Eabcd = (histoRMS_AB->GetBinContent(1) + histoRMS_C->GetBinContent(1) + histoRMS_D->GetBinContent(1))/3.;
+	  EabcdRMS = sqrt( (pow(histoRMS_AB->GetBinContent(1), 2) + pow(histoRMS_C->GetBinContent(1), 2) + pow(histoRMS_D->GetBinContent(1), 2))/3. -
+				 pow(Eabcd, 2) );
 	//        if( histo->GetEntries() < 30 ) continue;
 	//        histo -> Rebin(rebin);
 
@@ -903,18 +1019,30 @@ sprintf(histoName,"%s/EE/plots_vs_nPU_and_iRing/h_recHitE_nPU139.0-141.0__iRing%
         g_recHitE_RMS_vsAbsEta_PU0[datasetIt] -> SetPoint(point,binCenter,rmsPU0contrib);
         g_recHitE_RMS_vsAbsEta_PU0[datasetIt] -> SetPointError(point,0.,histo->GetRMSError());
         
-	float PU0contrib = GetEffectiveSigma(histo);
-	float PU0ContribE = histo->GetRMSError();
+	float PU0contrib = Eabcd; //histoRMS->GetBinContent(1);
+	float PU0ContribE = EabcdRMS; //histo->GetRMSError();
 	float PU0contrib2 = pow(PU0contrib,2);
         g_recHitE_sigma_vsAbsEta_PU0[datasetIt]->SetPoint(point,binCenter,PU0contrib);
-        g_recHitE_sigma_vsAbsEta_PU0[datasetIt]->SetPointError(point,0., histo->GetRMSError());
+        g_recHitE_sigma_vsAbsEta_PU0[datasetIt]->SetPointError(point,0., PU0ContribE);
 	//	std::cout << " >>> PU 0 - |eta| << " << binLowEdge << " " << binHigEdge << " " << PU0contrib << std::endl;
         
 	delete histo;
-
+	//	delete histoRMS;
+	delete histoRMS_AB;
+	delete histoRMS_C;
+	delete histoRMS_D;
 	//PU70
   sprintf(histoName,"%s/EB/plots_vs_nPU_and_absEta/h_recHitE_nPU69.0-71.0__absEta%1.4f-%1.4f_EB_%s",dataset.c_str(),binLowEdge,binHigEdge,dataset.c_str());
         histo = (TH1F*)( f->Get(histoName) );
+  sprintf(histoName,"%s/EB/plots_vs_nPU_and_absEta/h_recHitE_sigma_nPU69.0-71.0__absEta%1.4f-%1.4f_EB_%s",dataset.c_str(),binLowEdge,binHigEdge,dataset.c_str());
+  //        histoRMS = (TH1F*)( f->Get(histoName) );
+        histoRMS_AB = (TH1F*)( fAB->Get(histoName) );
+	histoRMS_C = (TH1F*)( fC->Get(histoName) );
+	histoRMS_D = (TH1F*)( fD->Get(histoName) );
+	Eabcd = (histoRMS_AB->GetBinContent(1) + histoRMS_C->GetBinContent(1) + histoRMS_D->GetBinContent(1))/3.;
+	EabcdRMS = sqrt( (pow(histoRMS_AB->GetBinContent(1), 2) + pow(histoRMS_C->GetBinContent(1), 2) + pow(histoRMS_D->GetBinContent(1), 2))/3. -
+			 pow(Eabcd, 2) );
+
 	//	if( histo->GetEntries() < 30 ) continue;
 	//        histo -> Rebin(rebin);
         
@@ -925,8 +1053,8 @@ sprintf(histoName,"%s/EE/plots_vs_nPU_and_iRing/h_recHitE_nPU139.0-141.0__iRing%
         g_recHitE_RMS_vsAbsEta_PU70ns[datasetIt] -> SetPoint(point,binCenter, sqrt(rmsPU70contrib2 - rmsPU0contrib2) );
         g_recHitE_RMS_vsAbsEta_PU70ns[datasetIt] -> SetPointError(point,0.,histo->GetRMSError());
         
-	float PU70contrib = GetEffectiveSigma(histo);
-	float PU70ContribE = histo->GetRMSError();
+	float PU70contrib = Eabcd; //histoRMS->GetBinContent(1);
+	float PU70ContribE = EabcdRMS; //histo->GetRMSError();
 	float PU70contrib2 = pow(PU70contrib,2);
         g_recHitE_sigma_vsAbsEta_PU70[datasetIt] -> SetPoint(point,binCenter,PU70contrib);
 	g_recHitE_sigma_vsAbsEta_PU70[datasetIt] -> SetPointError(point,0.,PU70ContribE);
@@ -935,14 +1063,27 @@ sprintf(histoName,"%s/EE/plots_vs_nPU_and_iRing/h_recHitE_nPU139.0-141.0__iRing%
 	denE = PU70ContribE - PU0contrib2;
 	//	g_recHitE_sigma_vsAbsEta_PU70ns[datasetIt] -> SetPointError(point,0., sqrt(numE/denE));
 	//	g_recHitE_sigma_vsAbsEta_PU70ns[datasetIt] -> SetPointError(point,0., 0.);
-	g_recHitE_sigma_vsAbsEta_PU70ns[datasetIt] -> SetPointError(point,0., histo->GetRMSError());
+	g_recHitE_sigma_vsAbsEta_PU70ns[datasetIt] -> SetPointError(point,0., PU70ContribE);
 
 	//	std::cout << " >>> PU 70 - |eta| << " << binLowEdge << " " << binHigEdge << " " << PU70contrib << std::endl;	
 	delete histo;
+	//	delete histoRMS;
+	delete histoRMS_AB;
+	delete histoRMS_C;
+	delete histoRMS_D;
 
 	//PU140
 sprintf(histoName,"%s/EB/plots_vs_nPU_and_absEta/h_recHitE_nPU139.0-141.0__absEta%1.4f-%1.4f_EB_%s",dataset.c_str(),binLowEdge,binHigEdge,dataset.c_str());
         histo = (TH1F*)( f->Get(histoName) );
+sprintf(histoName,"%s/EB/plots_vs_nPU_and_absEta/h_recHitE_sigma_nPU139.0-141.0__absEta%1.4f-%1.4f_EB_%s",dataset.c_str(),binLowEdge,binHigEdge,dataset.c_str());
+//      histoRMS = (TH1F*)( f->Get(histoName) );
+        histoRMS_AB = (TH1F*)( fAB->Get(histoName) );
+	histoRMS_C = (TH1F*)( fC->Get(histoName) );
+	histoRMS_D = (TH1F*)( fD->Get(histoName) );
+	Eabcd = (histoRMS_AB->GetBinContent(1) + histoRMS_C->GetBinContent(1) + histoRMS_D->GetBinContent(1))/3.;
+	EabcdRMS = sqrt( (pow(histoRMS_AB->GetBinContent(1), 2) + pow(histoRMS_C->GetBinContent(1), 2) + pow(histoRMS_D->GetBinContent(1), 2))/3. -
+			 pow(Eabcd, 2) );
+
 	//	if( histo->GetEntries() < 30 ) continue;
 	//        histo -> Rebin(rebin);
 	histo -> Rebin(2);
@@ -954,8 +1095,8 @@ sprintf(histoName,"%s/EB/plots_vs_nPU_and_absEta/h_recHitE_nPU139.0-141.0__absEt
         g_recHitE_RMS_vsAbsEta_PU140ns[datasetIt]->SetPoint(point,binCenter,sqrt(rmsPU140contrib2 - rmsPU0contrib2));
         g_recHitE_RMS_vsAbsEta_PU140ns[datasetIt]->SetPointError(point,0.,histo->GetRMSError());
         
-	float PU140contrib = GetEffectiveSigma(histo);
-	float PU140ContribE = histo->GetRMSError();
+	float PU140contrib = Eabcd; //histoRMS->GetBinContent(1);
+	float PU140ContribE = EabcdRMS; //histo->GetRMSError();
 	float PU140contrib2 = pow(PU140contrib,2);
 
         g_recHitE_sigma_vsAbsEta_PU140[datasetIt] -> SetPoint(point,binCenter,PU140contrib);
@@ -965,7 +1106,7 @@ sprintf(histoName,"%s/EB/plots_vs_nPU_and_absEta/h_recHitE_nPU139.0-141.0__absEt
         denE = PU140ContribE - PU0contrib2;
 	//        g_recHitE_sigma_vsAbsEta_PU140ns[datasetIt] -> SetPointError(point,0., sqrt(numE/denE));
 	//        g_recHitE_sigma_vsAbsEta_PU140ns[datasetIt] -> SetPointError(point,0., 0.);
-        g_recHitE_sigma_vsAbsEta_PU140ns[datasetIt] -> SetPointError(point,0., histo->GetRMSError());
+        g_recHitE_sigma_vsAbsEta_PU140ns[datasetIt] -> SetPointError(point,0., PU140ContribE);
         
 	//	std::cout << " >>> PU 140 - |eta| << " << binLowEdge << " " << binHigEdge << " " << PU140contrib << std::endl;	
 	delete histo;
@@ -977,6 +1118,16 @@ sprintf(histoName,"%s/EB/plots_vs_nPU_and_absEta/h_recHitE_nPU139.0-141.0__absEt
         char histoName[50];
         sprintf(histoName,"%s/EE/plots_vs_absEta/h_recHitE_absEta%1.4f-%1.4f_EE_%s",dataset.c_str(),binLowEdge,binHigEdge,dataset.c_str());
         TH1F* histo = (TH1F*)( f->Get(histoName) );
+	sprintf(histoName,"%s/EE/plots_vs_absEta/h_recHitE_sigma_absEta%1.4f-%1.4f_EE_%s",dataset.c_str(),binLowEdge,binHigEdge,dataset.c_str());
+//         TH1F* histoRMS = (TH1F*)( f->Get(histoName) );
+
+	TH1F* histoRMS_AB = (TH1F*)( fAB->Get(histoName) );
+	TH1F* histoRMS_C = (TH1F*)( fC->Get(histoName) );
+        TH1F* histoRMS_D = (TH1F*)( fD->Get(histoName) );
+	double Eabcd = (histoRMS_AB->GetBinContent(1) + histoRMS_C->GetBinContent(1) + histoRMS_D->GetBinContent(1))/3.;
+	double EabcdRMS = sqrt( (pow(histoRMS_AB->GetBinContent(1), 2) + pow(histoRMS_C->GetBinContent(1), 2) + pow(histoRMS_D->GetBinContent(1), 2))/3. -
+                                pow(Eabcd, 2) );
+
 	if( histo->GetEntries() < 30 ) continue;
 	histo -> Rebin(rebin);
         
@@ -985,10 +1136,10 @@ sprintf(histoName,"%s/EB/plots_vs_nPU_and_absEta/h_recHitE_nPU139.0-141.0__absEt
         g_recHitE_RMS_vsAbsEta[datasetIt] -> SetPointError(point,0.,histo->GetRMSError());
         
 	//	std::cout << " >>> all - |eta| << " << binLowEdge << " " << binHigEdge << " " << GetEffectiveSigma(histo) << std::endl;	
-	float sigmaPUContrib = GetEffectiveSigma(histo);
-	float sigmaPUContribE = histo->GetRMSError();
+	float sigmaPUContrib = Eabcd; //histoRMS->GetBinContent(1);
+	float sigmaPUContribE = EabcdRMS; histo->GetRMSError();
 	float sigmaPUContrib2 = pow(sigmaPUContrib, 2);
-        g_recHitE_sigma_vsAbsEta[datasetIt] -> SetPoint(point,binCenter,GetEffectiveSigma(histo));
+        g_recHitE_sigma_vsAbsEta[datasetIt] -> SetPoint(point,binCenter,sigmaPUContrib);
 	g_recHitE_sigma_vsAbsEta[datasetIt] -> SetPointError(point,0.,sigmaPUContribE);
 
 
@@ -1001,7 +1152,8 @@ sprintf(histoName,"%s/EB/plots_vs_nPU_and_absEta/h_recHitE_nPU139.0-141.0__absEt
 	double denE = sigmaPUContrib2 - y*y;
 	//	g_recHitE_sigma_vsAbsEtans[datasetIt] -> SetPointError(point,0., sqrt(numE/denE));
 	//	g_recHitE_sigma_vsAbsEtans[datasetIt] -> SetPointError(point,0., 0.);
-	g_recHitE_sigma_vsAbsEtans[datasetIt] -> SetPointError(point,0., histo->GetRMSError());
+	g_recHitE_sigma_vsAbsEtans[datasetIt] -> SetPointError(point,0., sigmaPUContribE);
+	std::cout << ">>>>>>>> EE error su sigma = " << sigmaPUContribE << " at PU0 = " << ey << std::endl;
 
 	double xp, yp;
 	float sigmaAt70PUPUContrib = g_recHitE_sigmaAt70PU_vsAbsEta[datasetIt]->GetPoint(point, xp, yp);
@@ -1025,11 +1177,23 @@ sprintf(histoName,"%s/EB/plots_vs_nPU_and_absEta/h_recHitE_nPU139.0-141.0__absEt
 	g_recHitE_sigmaAt140PU_vsAbsEtans[datasetIt] -> SetPointError(point,0.,eyp);
         
 	delete histo;
+	delete histoRMS_AB;
+	delete histoRMS_C;
+	delete histoRMS_D;
 
 	if(type == "MCMC"){
 	//PU0
   sprintf(histoName,"%s/EE/plots_vs_nPU_and_absEta/h_recHitE_nPU-1.0-1.0__absEta%1.4f-%1.4f_EE_%s",dataset.c_str(),binLowEdge,binHigEdge,dataset.c_str());
         histo = (TH1F*)( f->Get(histoName) );
+  sprintf(histoName,"%s/EE/plots_vs_nPU_and_absEta/h_recHitE_sigma_nPU-1.0-1.0__absEta%1.4f-%1.4f_EE_%s",dataset.c_str(),binLowEdge,binHigEdge,dataset.c_str());
+  //        TH1F* histoRMS = (TH1F*)( f->Get(histoName) );
+        histoRMS_AB = (TH1F*)( fAB->Get(histoName) );
+	histoRMS_C = (TH1F*)( fC->Get(histoName) );
+	histoRMS_D = (TH1F*)( fD->Get(histoName) );
+	Eabcd = (histoRMS_AB->GetBinContent(1) + histoRMS_C->GetBinContent(1) + histoRMS_D->GetBinContent(1))/3.;
+	EabcdRMS = sqrt( (pow(histoRMS_AB->GetBinContent(1), 2) + pow(histoRMS_C->GetBinContent(1), 2) + pow(histoRMS_D->GetBinContent(1), 2))/3. -
+			 pow(Eabcd, 2) );
+
 	//	if( histo->GetEntries() < 30 ) continue;
 	//        histo -> Rebin(rebin);
         
@@ -1040,8 +1204,8 @@ sprintf(histoName,"%s/EB/plots_vs_nPU_and_absEta/h_recHitE_nPU139.0-141.0__absEt
         g_recHitE_RMS_vsAbsEta_PU0[datasetIt] -> SetPointError(point,0.,histo->GetRMSError());
         
 
-	float PU0contrib = GetEffectiveSigma(histo);
-	float PU0ContribE = histo->GetRMSError();
+	float PU0contrib = Eabcd; //histoRMS->GetBinContent(1);
+	float PU0ContribE = EabcdRMS; //histo->GetRMSError();
         float PU0contrib2 = pow(PU0contrib,2);
 
         g_recHitE_sigma_vsAbsEta_PU0[datasetIt] -> SetPoint(point,binCenter,PU0contrib);
@@ -1049,10 +1213,23 @@ sprintf(histoName,"%s/EB/plots_vs_nPU_and_absEta/h_recHitE_nPU139.0-141.0__absEt
 	//	std::cout << " >>> PU 0 - |eta| << " << binLowEdge << " " << binHigEdge << " " << PU0contrib << std::endl;	
 
 	delete histo;
+	//	delete histoRMS;
+	delete histoRMS_AB;
+	delete histoRMS_C;
+	delete histoRMS_D;
 
 	//PU70
   sprintf(histoName,"%s/EE/plots_vs_nPU_and_absEta/h_recHitE_nPU69.0-71.0__absEta%1.4f-%1.4f_EE_%s",dataset.c_str(),binLowEdge,binHigEdge,dataset.c_str());
         histo = (TH1F*)( f->Get(histoName) );
+  sprintf(histoName,"%s/EE/plots_vs_nPU_and_absEta/h_recHitE_sigma_nPU69.0-71.0__absEta%1.4f-%1.4f_EE_%s",dataset.c_str(),binLowEdge,binHigEdge,dataset.c_str());
+  //        histoRMS = (TH1F*)( f->Get(histoName) );
+        histoRMS_AB = (TH1F*)( fAB->Get(histoName) );
+	histoRMS_C = (TH1F*)( fC->Get(histoName) );
+	histoRMS_D = (TH1F*)( fD->Get(histoName) );
+	Eabcd = (histoRMS_AB->GetBinContent(1) + histoRMS_C->GetBinContent(1) + histoRMS_D->GetBinContent(1))/3.;
+	EabcdRMS = sqrt( (pow(histoRMS_AB->GetBinContent(1), 2) + pow(histoRMS_C->GetBinContent(1), 2) + pow(histoRMS_D->GetBinContent(1), 2))/3. -
+			 pow(Eabcd, 2) );
+
 	//        if( histo->GetEntries() < 30 ) continue;
 	//	histo -> Rebin(rebin);
         
@@ -1064,24 +1241,37 @@ sprintf(histoName,"%s/EB/plots_vs_nPU_and_absEta/h_recHitE_nPU139.0-141.0__absEt
         g_recHitE_RMS_vsAbsEta_PU70ns[datasetIt] -> SetPointError(point,0.,histo->GetRMSError());
         
 
-	float PU70contrib = GetEffectiveSigma(histo);
-	float PU70ContribE = histo->GetRMSError();
+	float PU70contrib = Eabcd; //histoRMS->GetBinContent(1);
+	float PU70ContribE = EabcdRMS; //histo->GetRMSError();
 	float PU70contrib2 = pow(PU70contrib,2);
-        g_recHitE_sigma_vsAbsEta_PU70[datasetIt] -> SetPoint(point,binCenter,GetEffectiveSigma(histo));
+        g_recHitE_sigma_vsAbsEta_PU70[datasetIt] -> SetPoint(point,binCenter,PU70contrib);
         g_recHitE_sigma_vsAbsEta_PU70[datasetIt] -> SetPointError(point,0.,PU70ContribE);
         g_recHitE_sigma_vsAbsEta_PU70ns[datasetIt]->SetPoint(point,binCenter,sqrt(PU70contrib2 - PU0contrib2));
 	numE = pow(PU70contrib * PU70ContribE, 2) + pow(PU0contrib * PU0ContribE, 2);
         denE = PU70ContribE - PU0contrib2;
 	//        g_recHitE_sigma_vsAbsEta_PU70ns[datasetIt] -> SetPointError(point,0., sqrt(numE/denE));
 	//        g_recHitE_sigma_vsAbsEta_PU70ns[datasetIt] -> SetPointError(point,0., 0.);
-        g_recHitE_sigma_vsAbsEta_PU70ns[datasetIt] -> SetPointError(point,0., histo->GetRMSError());
+        g_recHitE_sigma_vsAbsEta_PU70ns[datasetIt] -> SetPointError(point,0., PU70ContribE);
 
 	//	std::cout << " >>> PU 70 - |eta| << " << binLowEdge << " " << binHigEdge << " " << PU70contrib << std::endl;	
 	delete histo;
+	//	delete histoRMS;
+	delete histoRMS_AB;
+	delete histoRMS_C;
+	delete histoRMS_D;
 
 	//PU140
 sprintf(histoName,"%s/EE/plots_vs_nPU_and_absEta/h_recHitE_nPU139.0-141.0__absEta%1.4f-%1.4f_EE_%s",dataset.c_str(),binLowEdge,binHigEdge,dataset.c_str());
         histo = (TH1F*)( f->Get(histoName) );
+sprintf(histoName,"%s/EE/plots_vs_nPU_and_absEta/h_recHitE_sigma_nPU139.0-141.0__absEta%1.4f-%1.4f_EE_%s",dataset.c_str(),binLowEdge,binHigEdge,dataset.c_str());
+//        histoRMS = (TH1F*)( f->Get(histoName) );
+        histoRMS_AB = (TH1F*)( fAB->Get(histoName) );
+	histoRMS_C = (TH1F*)( fC->Get(histoName) );
+	histoRMS_D = (TH1F*)( fD->Get(histoName) );
+	Eabcd = (histoRMS_AB->GetBinContent(1) + histoRMS_C->GetBinContent(1) + histoRMS_D->GetBinContent(1))/3.;
+	EabcdRMS = sqrt( (pow(histoRMS_AB->GetBinContent(1), 2) + pow(histoRMS_C->GetBinContent(1), 2) + pow(histoRMS_D->GetBinContent(1), 2))/3. -
+			 pow(Eabcd, 2) );
+
 	//	if( histo->GetEntries() < 30 ) continue;
 	//        histo -> Rebin(rebin);
 	histo -> Rebin(2);
@@ -1094,17 +1284,17 @@ sprintf(histoName,"%s/EE/plots_vs_nPU_and_absEta/h_recHitE_nPU139.0-141.0__absEt
         g_recHitE_RMS_vsAbsEta_PU140ns[datasetIt] -> SetPointError(point,0.,histo->GetRMSError());
 
 
-	float PU140contrib = GetEffectiveSigma(histo);
-	float PU140ContribE = histo->GetRMSError();
+	float PU140contrib = Eabcd; //histoRMS->GetBinContent(1);
+	float PU140ContribE = EabcdRMS; //histo->GetRMSError();
 	float PU140contrib2 = pow(PU140contrib,2);        
-        g_recHitE_sigma_vsAbsEta_PU140[datasetIt] -> SetPoint(point,binCenter,GetEffectiveSigma(histo));
+        g_recHitE_sigma_vsAbsEta_PU140[datasetIt] -> SetPoint(point,binCenter,PU140contrib);
         g_recHitE_sigma_vsAbsEta_PU140[datasetIt] -> SetPointError(point,0.,PU140ContribE);
         g_recHitE_sigma_vsAbsEta_PU140ns[datasetIt]->SetPoint(point,binCenter,sqrt(PU140contrib2 - PU0contrib2));
 	numE = pow(PU140contrib * PU140ContribE, 2) + pow(PU0contrib * PU0ContribE, 2);
         denE = PU140ContribE - PU0contrib2;
-        g_recHitE_sigma_vsAbsEta_PU140ns[datasetIt] -> SetPointError(point,0., sqrt(numE/denE));
+	//        g_recHitE_sigma_vsAbsEta_PU140ns[datasetIt] -> SetPointError(point,0., sqrt(numE/denE));
 	//        g_recHitE_sigma_vsAbsEta_PU140ns[datasetIt] -> SetPointError(point,0., 0.);
-        g_recHitE_sigma_vsAbsEta_PU140ns[datasetIt] -> SetPointError(point,0., histo->GetRMSError());
+        g_recHitE_sigma_vsAbsEta_PU140ns[datasetIt] -> SetPointError(point,0., PU140ContribE);
 
 	//	std::cout << " >>> PU 140 - |eta| << " << binLowEdge << " " << binHigEdge << " " << PU140contrib << std::endl;	
         //histo->GetBinWidth(1);
@@ -1316,7 +1506,7 @@ sprintf(histoName,"%s/EE/plots_vs_nPU_and_absEta/h_recHitE_nPU139.0-141.0__absEt
   if(type == "DAMC") SetGraphStyle(gEE_recHitE_sigma_vsNPU[1],"MC","EE","vsNPU","recHitE_sigma",&leg);
   if(type == "DAMC"){
     gEE_recHitE_sigma_vsNPU[0]->GetXaxis()->SetRangeUser(0.,50.);
-    gEE_recHitE_sigma_vsNPU[0]->SetMaximum(0.5);
+    gEE_recHitE_sigma_vsNPU[0]->SetMaximum(1.2);
   }
   //  if(type == "DAMC") leg -> Draw("same");
   c -> Print((folderName+"gEE_recHitE_sigma_vsNPU.png").c_str(),"png");
@@ -1991,6 +2181,9 @@ void SetGraphStyle(TGraphErrors* g, const std::string& dataset, const std::strin
       }
       
       TF1* f_prefit_DA = new TF1("f_prefit_DA","[0]+[1]*x",-0.5,199.5);
+      if(type == "DAMC") f_prefit_DA->SetRange(5., 30.);
+      g -> Fit("f_prefit_DA","QNRS");
+      if(type == "DAMC") f_prefit_DA->SetRange(5., 100.);
       g -> Fit("f_prefit_DA","QNRS");
             
       for(int point = 0; point < g->GetN(); ++point)
@@ -2000,6 +2193,9 @@ void SetGraphStyle(TGraphErrors* g, const std::string& dataset, const std::strin
       }
             
       TF1* f_pol1_DA = new TF1("f_pol1_DA","[0]+[1]*x",-0.5,199.5);
+      if(type == "DAMC") f_pol1_DA->SetRange(5., 30.);
+      g -> Fit("f_pol1_DA","QNRS");
+      if(type == "DAMC") f_pol1_DA->SetRange(5., 100.);
       g -> Fit("f_pol1_DA","QNRS");
       f_pol1_DA -> SetLineColor(kBlack);
       f_pol1_DA -> Draw("same");
@@ -2034,7 +2230,11 @@ void SetGraphStyle(TGraphErrors* g, const std::string& dataset, const std::strin
     if( dataset == "MC" )
     {
       TF1* f_prefit_MC = new TF1("f_prefit_MC","[0]+[1]*x",-0.5,199.5);
+      if(type == "DAMC") f_prefit_MC->SetRange(5., 30.);
       g -> Fit("f_prefit_MC","QNRS");
+      if(type == "DAMC") f_prefit_MC->SetRange(5., 100.);
+      g -> Fit("f_prefit_MC","QNRS");
+
             
       for(int point = 0; point < g->GetN(); ++point)
       {
@@ -2043,6 +2243,9 @@ void SetGraphStyle(TGraphErrors* g, const std::string& dataset, const std::strin
       }
             
       TF1* f_pol1_MC = new TF1("f_pol1_MC","[0]+[1]*x",-0.5,199.5);
+      if(type == "DAMC") f_pol1_MC->SetRange(5., 30.);
+      g -> Fit("f_pol1_MC","QNRS");
+      if(type == "DAMC") f_pol1_MC->SetRange(5., 100.);
       g -> Fit("f_pol1_MC","QNRS");
       f_pol1_MC -> SetLineColor(kRed);
       f_pol1_MC -> Draw("same");
@@ -2162,39 +2365,7 @@ float GetEffectiveSigma(TH1F* h){
   float LocEvents = 0.;
   int binI = h->FindBin(h->GetMean());
   int binF = h->GetNbinsX()-1;
-
   bool keepGoing = false;
-
-  /*
-  for(int jBin=binI; jBin>0; --jBin){
-
-    LocEvents = 0.;
-    keepGoing = false;
-    for(int iBin=jBin; iBin<binF; ++iBin){
-      //      std::cout << " iBin = " << iBin << std::endl;
-      LocEvents += h->GetBinContent(iBin);
-//        std::cout << " >>> h->GetBinContent(iBin) = " << h->GetBinContent(iBin) << std::endl;
-//       std::cout << "LocEvents/TotEvent = " << LocEvents/TotEvents << std::endl;
-//       std::cout << "TotEvent = " << TotEvents << std::endl;
-//       std::cout << "LocEvent = " << LocEvents << std::endl;
-      if(LocEvents/TotEvents >= 0.68) {
-	if(iBin-jBin < binF-binI) {
-	  binF = iBin;
-	  binI = jBin;
-	  keepGoing = true;
-	}
-	//std::cout << " >>>>>>>>>>>>>>>>>>>>>  iBin-jBin = " << iBin-jBin << " keepGoing = " << keepGoing << std::endl;
-        break;
-      } 
-      if(iBin == binF-1){
-        keepGoing = true;
-        --binI;
-      }
-    }
-    if(keepGoing == false) break;
-  }
-
-  */
 
   for(int jBin=binI; jBin>0; --jBin){
     LocEvents = 0.;
@@ -2218,8 +2389,60 @@ float GetEffectiveSigma(TH1F* h){
     if(keepGoing == false) break;
   }
 
-
   float sigma = (h->GetBinCenter(binF) - h->GetBinCenter(binI))/2.;
   //  std::cout << " >>> sigma" << sigma << std::endl;
   return sigma;
 }
+
+
+void GetEffectiveSigma(TH1F* h, double& E1, double& E2){
+
+  double TotEvents = h->Integral(1, h->GetNbinsX()-1);
+  float LocEvents = 0.;
+  int binI = h->FindBin(h->GetMean());
+  int binF = h->GetNbinsX()-1;
+  bool keepGoing = false;
+
+  for(int jBin=binI; jBin>0; --jBin){
+    LocEvents = 0.;
+    keepGoing = false;
+    for(int iBin=jBin; iBin<binF; ++iBin){
+      LocEvents += h->GetBinContent(iBin);
+      if(LocEvents/TotEvents >= 0.68) {
+	if(iBin-jBin < binF-binI) {
+	  binF = iBin;
+	  binI = jBin;
+	  keepGoing = true;
+	}
+        break;
+      }
+      if(iBin == binF-1 && binF == h->GetNbinsX()-1){
+	keepGoing = true;
+	--binI;
+      }
+      if(iBin == binF-1 && binF != h->GetNbinsX()-1) break;
+    }
+    if(keepGoing == false) break;
+  }
+
+  E1 = h->GetBinCenter(binI);
+  E2 = h->GetBinCenter(binF);
+  float sigma = (h->GetBinCenter(binF) - h->GetBinCenter(binI))/2.;
+  //  std::cout << " >>> sigma" << sigma << std::endl;
+  return;
+}
+
+
+
+void FillHistoRMS(TH1F* histo, float rms, float mean){
+  std::cout << " (mean - rms)/2. = " << (mean - rms)/2. << std::endl;
+  std::cout << " (mean + rms)/2. = " << (mean + rms)/2. << std::endl;
+  for(int iB=1; iB<histo->GetNbinsX(); ++iB) {
+    if(iB < histo->FindBin(mean - rms) ) histo->SetBinContent(iB, 0.);
+    else if(iB > histo->FindBin(mean + rms) ) histo->SetBinContent(iB, 0.);
+  }
+  std::cout << " histo->FindBin((mean - rms)/2.) = " << histo->FindBin((mean - rms)/2.) << std::endl;
+  histo->SetFillColor(kYellow);
+  histo->SetFillStyle(3001);
+}
+

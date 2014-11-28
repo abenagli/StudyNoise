@@ -4,6 +4,7 @@
 #include "PUreweightingUtils.h"
 #include "avgPUList.h"
 #include "TEndcapRings.h"
+#include "ScaleEstimators.h"
 
 #include <iostream>
 #include <fstream>
@@ -94,7 +95,6 @@ int main(int argc, char** argv)
   
   
   
-  
   // define datasets
   std::vector<std::string> datasets;
   datasets.push_back("DA");
@@ -125,10 +125,25 @@ int main(int argc, char** argv)
   TFile* outFile = new TFile(outfileName.c_str(),"RECREATE");
   
   
+  //outTree
+  TTree* newtree = new TTree("newtree", "");  
+  float ele1_puBin_min, ele1_puBin_max;
+  float ele2_puBin_min, ele2_puBin_max;
+  float ele1_absetaBin_min, ele1_absetaBin_max, ele1_recHitE;
+  float ele2_absetaBin_min, ele2_absetaBin_max, ele2_recHitE;
+  newtree->Branch("ele1_puBin_min",&ele1_puBin_min, "ele1_puBin_min/F");
+  newtree->Branch("ele1_puBin_max",&ele1_puBin_max, "ele1_puBin_max/F");
+  newtree->Branch("ele1_absetaBin_min",&ele1_absetaBin_min, "ele1_absetaBin_min/F");
+  newtree->Branch("ele1_absetaBin_max",&ele1_absetaBin_max, "ele1_absetaBin_max/F");
+  newtree->Branch("ele1_recHitE",&ele1_recHitE, "ele1_recHitE/F");
+  newtree->Branch("ele2_puBin_min",&ele2_puBin_min, "ele2_puBin_min/F");
+  newtree->Branch("ele2_puBin_max",&ele2_puBin_max, "ele2_puBin_max/F");
+  newtree->Branch("ele2_absetaBin_min",&ele2_absetaBin_min, "ele2_absetaBin_min/F");
+  newtree->Branch("ele2_absetaBin_max",&ele2_absetaBin_max, "ele2_absetaBin_max/F");
+  newtree->Branch("ele2_recHitE",&ele2_recHitE, "ele2_recHitE/F");
   
-  
-  
-  
+
+
   // PU reweighting
   std::map<float,float> PUWeights = *(ComputePUweights(chain["MC"],PUDistrFile,false));
   
@@ -179,12 +194,20 @@ int main(int argc, char** argv)
   std::map<std::string,std::map<std::string,std::map<std::string,TH1F*> > > h_recHitPedSubADC_vsNPUEta;
   std::map<std::string,std::map<std::string,std::map<std::string,TH1F*> > > h_recHitPedSubADC_vsNPUAbsEta;
   std::map<std::string,std::map<std::string,std::map<std::string,TH1F*> > > h_recHitE_vsNPU;
+  std::map<std::string,std::map<std::string,std::map<std::string,TH1F*> > > h_recHitE_vsNPU_sigma;
+  std::map<std::string,std::map<std::string,std::map<std::string,std::vector<double> > > > v_recHitE_vsNPU_sigma;
+
   std::map<std::string,std::map<std::string,std::map<std::string,TH1F*> > > h_recHitE_vsIRing;
   std::map<std::string,std::map<std::string,std::map<std::string,TH1F*> > > h_recHitE_vsEta;
   std::map<std::string,std::map<std::string,std::map<std::string,TH1F*> > > h_recHitE_vsAbsEta;
+  std::map<std::string,std::map<std::string,std::map<std::string,TH1F*> > > h_recHitE_vsAbsEta_sigma;
+  std::map<std::string,std::map<std::string,std::map<std::string,std::vector<double> > > > v_recHitE_vsAbsEta_sigma;
+
   std::map<std::string,std::map<std::string,std::map<std::string,TH1F*> > > h_recHitE_vsNPUIRing;
   std::map<std::string,std::map<std::string,std::map<std::string,TH1F*> > > h_recHitE_vsNPUEta;
   std::map<std::string,std::map<std::string,std::map<std::string,TH1F*> > > h_recHitE_vsNPUAbsEta;
+  std::map<std::string,std::map<std::string,std::map<std::string,TH1F*> > > h_recHitE_vsNPUAbsEta_sigma;
+  std::map<std::string,std::map<std::string,std::map<std::string,std::vector<double> > > > v_recHitE_vsNPUAbsEta_sigma;
   
   std::cout << ">>> define histograms" << std::endl;
   for(int datasetIt = 0; datasetIt < nDatasets; ++datasetIt)
@@ -239,8 +262,8 @@ int main(int argc, char** argv)
       (h_recHitE[dataset])[region] -> Sumw2();
       
       std::cout << ">>>>>> global histos defined" << std::endl;
-      
-      
+    
+   
       for(int nPUIt = 0; nPUIt < nBins_nPU; ++nPUIt)
       {
         char nPUChar[50];
@@ -258,6 +281,10 @@ int main(int argc, char** argv)
         histoName = "h_recHitE_" + nPUString + "_" + region + "_" + dataset;
         ((h_recHitE_vsNPU[dataset])[region])[nPUString] = new TH1F(histoName.c_str(),"",nBins_recHitE,recHitEMin,recHitEMax);
         ((h_recHitE_vsNPU[dataset])[region])[nPUString] -> Sumw2();
+
+	histoName = "h_recHitE_sigma" + nPUString + "_" + region + "_" + dataset;
+	((h_recHitE_vsNPU_sigma[dataset])[region])[nPUString] = new TH1F(histoName.c_str(),"",3,0.,3.);
+	((h_recHitE_vsNPU_sigma[dataset])[region])[nPUString] -> Sumw2();
       }
       std::cout << ">>>>>> histos vs nPU defined" << std::endl;
       
@@ -306,6 +333,10 @@ int main(int argc, char** argv)
         histoName = "h_recHitE_" + absEtaString + "_" + region + "_" + dataset;
         ((h_recHitE_vsAbsEta[dataset])[region])[absEtaString] = new TH1F(histoName.c_str(),"",nBins_recHitE,recHitEMin,recHitEMax);
         ((h_recHitE_vsAbsEta[dataset])[region])[absEtaString] -> Sumw2();
+
+        histoName = "h_recHitE_sigma_" + absEtaString + "_" + region + "_" + dataset;
+        ((h_recHitE_vsAbsEta_sigma[dataset])[region])[absEtaString] = new TH1F(histoName.c_str(),"",3, 0., 3.);
+        ((h_recHitE_vsAbsEta_sigma[dataset])[region])[absEtaString] -> Sumw2();
       }
       std::cout << ">>>>>> histos vs absEta defined" << std::endl;
       
@@ -369,6 +400,10 @@ int main(int argc, char** argv)
           histoName = "h_recHitE_" + nPUAbsEtaString + "_" + region + "_" + dataset;
           ((h_recHitE_vsNPUAbsEta[dataset])[region])[nPUAbsEtaString] = new TH1F(histoName.c_str(),"",nBins_recHitE,recHitEMin,recHitEMax);
           ((h_recHitE_vsNPUAbsEta[dataset])[region])[nPUAbsEtaString] -> Sumw2();
+
+	  histoName = "h_recHitE_sigma_" + nPUAbsEtaString + "_" + region + "_" + dataset;
+	  ((h_recHitE_vsNPUAbsEta_sigma[dataset])[region])[nPUAbsEtaString] = new TH1F(histoName.c_str(),"",3, 0., 3.);
+          ((h_recHitE_vsNPUAbsEta_sigma[dataset])[region])[nPUAbsEtaString] -> Sumw2();
         }
       std::cout << ">>>>>> histos vs nPU-absEta defined" << std::endl;
     }
@@ -459,6 +494,20 @@ int main(int argc, char** argv)
       //if( entry >= 1000 ) break;
       if( entry%10000 == 0 ) std::cout << ">>>>>> reading entry " << entry << " / " << chain[dataset]->GetEntries() << "\r" << std::flush;
       chain[dataset] -> GetEntry(entry);
+
+
+      //initialize newtree
+      ele1_puBin_min = -1.;
+      ele1_puBin_max = -1.;
+      ele2_puBin_min = -1.;
+      ele2_puBin_max = -1.;
+      ele1_absetaBin_min = -1.;
+      ele1_absetaBin_max = -1.;
+      ele1_recHitE = -5.;
+      ele2_absetaBin_min = -1.;
+      ele2_absetaBin_max = -1.;
+      ele2_recHitE = -5.;
+
       
       
       // selections
@@ -548,13 +597,22 @@ int main(int argc, char** argv)
           
           (h_recHitE[dataset])             [ele1_region]                   -> Fill(recHit_E,PUWeight);
           ((h_recHitE_vsNPU[dataset])      [ele1_region])[nPUString]       -> Fill(recHit_E);
+          ((v_recHitE_vsNPU_sigma[dataset])      [ele1_region])[nPUString]      .push_back(recHit_E);
+ 	  ele1_puBin_min = nPU_axis.at(nPUBin-1);
+ 	  ele1_puBin_max = nPU_axis.at(nPUBin);
           ((h_recHitE_vsIRing[dataset])    [ele1_region])[iRingString]     -> Fill(recHit_E,PUWeight);
           ((h_recHitE_vsEta[dataset])      [ele1_region])[etaString]       -> Fill(recHit_E,PUWeight);
           ((h_recHitE_vsAbsEta[dataset])   [ele1_region])[absEtaString]    -> Fill(recHit_E,PUWeight);
+          ((v_recHitE_vsAbsEta_sigma[dataset])[ele1_region])[nPUString]         .push_back(recHit_E);
+
           ((h_recHitE_vsNPUIRing[dataset]) [ele1_region])[nPUIRingString]  -> Fill(recHit_E);
           ((h_recHitE_vsNPUEta[dataset])   [ele1_region])[nPUEtaString]    -> Fill(recHit_E);
           ((h_recHitE_vsNPUAbsEta[dataset])[ele1_region])[nPUAbsEtaString] -> Fill(recHit_E);
-          
+	  ((v_recHitE_vsNPUAbsEta_sigma[dataset])[ele1_region])[nPUAbsEtaString].push_back(recHit_E);
+ 	  ele1_absetaBin_min = absEta_axis.at(absEtaBin-1);
+ 	  ele1_absetaBin_max = absEta_axis.at(absEtaBin);
+ 	  ele1_recHitE = recHit_E;
+
           float pedestal = 0.;
           for(int sampleIt = 0; sampleIt < 10; ++sampleIt)
           {
@@ -579,7 +637,7 @@ int main(int argc, char** argv)
             ((h_recHitPedSubADC_vsNPUAbsEta[dataset])[ele1_region])[nPUAbsEtaString] -> Fill(recHit_ADC-pedestal);
           }
         }
-      }    
+      }  
       // end of fill ele1
       
       
@@ -660,12 +718,22 @@ int main(int argc, char** argv)
           
           (h_recHitE[dataset])             [ele2_region]                   -> Fill(recHit_E,PUWeight);
           ((h_recHitE_vsNPU[dataset])      [ele2_region])[nPUString]       -> Fill(recHit_E);
+          ((v_recHitE_vsNPU_sigma[dataset])      [ele2_region])[nPUString]      .push_back(recHit_E);
+ 	  ele2_puBin_min = nPU_axis.at(nPUBin-1);
+ 	  ele2_puBin_max = nPU_axis.at(nPUBin);
           ((h_recHitE_vsIRing[dataset])    [ele2_region])[iRingString]     -> Fill(recHit_E,PUWeight);
           ((h_recHitE_vsEta[dataset])      [ele2_region])[etaString]       -> Fill(recHit_E,PUWeight);
           ((h_recHitE_vsAbsEta[dataset])   [ele2_region])[absEtaString]    -> Fill(recHit_E,PUWeight);
+          ((v_recHitE_vsAbsEta_sigma[dataset])[ele2_region])[nPUString]         .push_back(recHit_E);
+
           ((h_recHitE_vsNPUIRing[dataset]) [ele2_region])[nPUIRingString]  -> Fill(recHit_E);
           ((h_recHitE_vsNPUEta[dataset])   [ele2_region])[nPUEtaString]    -> Fill(recHit_E);
           ((h_recHitE_vsNPUAbsEta[dataset])[ele2_region])[nPUAbsEtaString] -> Fill(recHit_E);
+	  ((v_recHitE_vsNPUAbsEta_sigma[dataset])[ele2_region])[nPUAbsEtaString].push_back(recHit_E);
+ 	  ele2_absetaBin_min = absEta_axis.at(absEtaBin-1);
+ 	  ele2_absetaBin_max = absEta_axis.at(absEtaBin);
+ 	  ele2_recHitE = recHit_E;
+
           
           float pedestal = 0.;
           for(int sampleIt = 0; sampleIt < 10; ++sampleIt)
@@ -693,7 +761,9 @@ int main(int argc, char** argv)
         }
       }    
       // end of fill ele2
+      newtree->Fill();
     }
+
     std::cout << std::endl;
     std::cout << ">>> end of loop for dataset " << dataset << std::endl;
   }
@@ -735,7 +805,17 @@ int main(int argc, char** argv)
         std::string nPUString(nPUChar);
         WriteNormalized( ((h_nPUDistr_vsNPU[dataset])[region])[nPUString] );
         WriteNormalized( ((h_recHitE_vsNPU[dataset])[region])[nPUString] );
-        WriteNormalized( ((h_recHitPedSubADC_vsNPU[dataset])[region])[nPUString] );
+        WriteNormalized( ((h_recHitPedSubADC_vsNPU[dataset])[region])[nPUString] );	
+
+	double min, max;
+	if(((v_recHitE_vsNPU_sigma[dataset])[region])[nPUString].size() > 1){
+	  FindSmallestIntervalV(min, max, ((v_recHitE_vsNPU_sigma[dataset])[region])[nPUString],0.68, 0);
+	  (((h_recHitE_vsNPU_sigma[dataset])[region])[nPUString])->SetBinContent(1, (max-min)/2.);
+	  (((h_recHitE_vsNPU_sigma[dataset])[region])[nPUString])->SetBinContent(2, min);
+	  (((h_recHitE_vsNPU_sigma[dataset])[region])[nPUString])->SetBinContent(3, max);
+	}
+        ( ((h_recHitE_vsNPU_sigma[dataset])[region])[nPUString] )->Write();
+	std::cout << " done FindSmallestInterval nPUString " << std::endl;	
       }
       
       c3 = c2 -> mkdir("plots_vs_iRing");
@@ -769,55 +849,76 @@ int main(int argc, char** argv)
         std::string absEtaString(absEtaChar);
         WriteNormalized( ((h_recHitPedSubADC_vsAbsEta[dataset])[region])[absEtaString] );
         WriteNormalized( ((h_recHitE_vsAbsEta[dataset])[region])[absEtaString] );
+
+	double min, max;
+	if( ((v_recHitE_vsAbsEta_sigma[dataset])[region])[absEtaString].size() > 1){
+	  FindSmallestIntervalV(min, max, ((v_recHitE_vsAbsEta_sigma[dataset])[region])[absEtaString], 0.68, 0);
+	  (((h_recHitE_vsAbsEta_sigma[dataset])[region])[absEtaString])->SetBinContent(1, (max-min)/2.);
+	  (((h_recHitE_vsAbsEta_sigma[dataset])[region])[absEtaString])->SetBinContent(2, min);
+	  (((h_recHitE_vsAbsEta_sigma[dataset])[region])[absEtaString])->SetBinContent(3, max);
+	}
+	( ((h_recHitE_vsAbsEta_sigma[dataset])[region])[absEtaString] )->Write();
+	std::cout << " donedone FindSmallestInterval absEtaString " << std::endl;	
       }
       
       c3 = c2 -> mkdir("plots_vs_nPU_and_iRing");
       c3 -> cd();
       for(int nPUIt = 0; nPUIt < nBins_nPU; ++nPUIt)
         for(int iRingIt = 0; iRingIt < nBins_iRing; ++iRingIt)
-        {
-          char nPUIRingChar[50];
-          sprintf(nPUIRingChar,"nPU%2.1f-%2.1f__iRing%2.1f-%2.1f",nPU_axis.at(nPUIt),nPU_axis.at(nPUIt+1),iRing_axis.at(iRingIt),iRing_axis.at(iRingIt+1));
-          std::string nPUIRingString(nPUIRingChar);
-          WriteNormalized( ((h_nPUDistr_vsNPUIRing[dataset])[region])[nPUIRingString] );
-          WriteNormalized( ((h_recHitPedSubADC_vsNPUIRing[dataset])[region])[nPUIRingString] );
-          WriteNormalized( ((h_recHitE_vsNPUIRing[dataset])[region])[nPUIRingString] );
-        }
-      
+	  {
+	    char nPUIRingChar[50];
+    sprintf(nPUIRingChar,"nPU%2.1f-%2.1f__iRing%2.1f-%2.1f",nPU_axis.at(nPUIt),nPU_axis.at(nPUIt+1),iRing_axis.at(iRingIt),iRing_axis.at(iRingIt+1));
+	    std::string nPUIRingString(nPUIRingChar);
+	    WriteNormalized( ((h_nPUDistr_vsNPUIRing[dataset])[region])[nPUIRingString] );
+	    WriteNormalized( ((h_recHitPedSubADC_vsNPUIRing[dataset])[region])[nPUIRingString] );
+	    WriteNormalized( ((h_recHitE_vsNPUIRing[dataset])[region])[nPUIRingString] );
+	  }
+    
       c3 = c2 -> mkdir("plots_vs_nPU_and_eta");
       c3 -> cd();
       for(int nPUIt = 0; nPUIt < nBins_nPU; ++nPUIt)
-        for(int etaIt = 0; etaIt < nBins_eta; ++etaIt)
-        {
-          char nPUEtaChar[50];
-          sprintf(nPUEtaChar,"nPU%2.1f-%2.1f__eta%1.4f-%1.4f",nPU_axis.at(nPUIt),nPU_axis.at(nPUIt+1),eta_axis.at(etaIt),eta_axis.at(etaIt+1));
-          std::string nPUEtaString(nPUEtaChar);
-          WriteNormalized( ((h_nPUDistr_vsNPUEta[dataset])[region])[nPUEtaString] );
-          WriteNormalized( ((h_recHitPedSubADC_vsNPUEta[dataset])[region])[nPUEtaString] );
-          WriteNormalized( ((h_recHitE_vsNPUEta[dataset])[region])[nPUEtaString] );
-        }
+	for(int etaIt = 0; etaIt < nBins_eta; ++etaIt)
+	  {
+	    char nPUEtaChar[50];
+	    sprintf(nPUEtaChar,"nPU%2.1f-%2.1f__eta%1.4f-%1.4f",nPU_axis.at(nPUIt),nPU_axis.at(nPUIt+1),eta_axis.at(etaIt),eta_axis.at(etaIt+1));
+	    std::string nPUEtaString(nPUEtaChar);
+	    WriteNormalized( ((h_nPUDistr_vsNPUEta[dataset])[region])[nPUEtaString] );
+	    WriteNormalized( ((h_recHitPedSubADC_vsNPUEta[dataset])[region])[nPUEtaString] );
+	    WriteNormalized( ((h_recHitE_vsNPUEta[dataset])[region])[nPUEtaString] );
+	  }
       
       c3 = c2 -> mkdir("plots_vs_nPU_and_absEta");
       c3 -> cd();
       for(int nPUIt = 0; nPUIt < nBins_nPU; ++nPUIt)
         for(int absEtaIt = 0; absEtaIt < nBins_absEta; ++absEtaIt)
-        {
-          char nPUAbsEtaChar[50];
+	  {
+	    char nPUAbsEtaChar[50];
           sprintf(nPUAbsEtaChar,"nPU%2.1f-%2.1f__absEta%1.4f-%1.4f",nPU_axis.at(nPUIt),nPU_axis.at(nPUIt+1),absEta_axis.at(absEtaIt),absEta_axis.at(absEtaIt+1));
           std::string nPUAbsEtaString(nPUAbsEtaChar);
           WriteNormalized( ((h_nPUDistr_vsNPUAbsEta[dataset])[region])[nPUAbsEtaString] );
           WriteNormalized( ((h_recHitPedSubADC_vsNPUAbsEta[dataset])[region])[nPUAbsEtaString] );
           WriteNormalized( ((h_recHitE_vsNPUAbsEta[dataset])[region])[nPUAbsEtaString] );
-        }
-            
+
+	  std::cout << " prima di FindSmallestInterval nPUAbsEtaString " << std::endl;	
+	  double min, max;
+	  if( ((v_recHitE_vsNPUAbsEta_sigma[dataset])[region])[nPUAbsEtaString].size() > 1){
+	    FindSmallestIntervalV(min, max, ((v_recHitE_vsNPUAbsEta_sigma[dataset])[region])[nPUAbsEtaString], 0.68, 0);
+	    (((h_recHitE_vsNPUAbsEta_sigma[dataset])[region])[nPUAbsEtaString])->SetBinContent(1, (max-min)/2.);
+	    (((h_recHitE_vsNPUAbsEta_sigma[dataset])[region])[nPUAbsEtaString])->SetBinContent(2, min);
+	    (((h_recHitE_vsNPUAbsEta_sigma[dataset])[region])[nPUAbsEtaString])->SetBinContent(3, max);
+	    ( ((h_recHitE_vsNPUAbsEta_sigma[dataset])[region])[nPUAbsEtaString] )->Write();
+	    std::cout << " done FindSmallestInterval nPUAbsEtaString " << std::endl;	
+	  }
+	  }
+      std::cout << " fine dei giri " << std::endl;	
       outFile -> cd("");
     }
   }
-  
+
+  newtree->Write("newtree");  
   outFile -> Close();
   std::cout << ">>> outfile " << outfileName << " created" << std::endl;
-  
-  
+   
   return 0;
 }
 
